@@ -30,7 +30,9 @@ h1{margin:0 0 6px;color:var(--soft);font-size:1.15rem}
 #order-head.pop{animation:pop .3s}
 @keyframes pop{0%{transform:scale(1.35);color:var(--soft)}100%{transform:scale(1)}}
 #order-text{font-weight:bold;font-size:1rem;margin-top:2px}
-#bowl-wrap{width:140px;height:140px;margin-bottom:8px}
+#bowl-wrap{width:176px;height:176px;margin-bottom:6px}
+#bowl-wrap svg{width:100%;height:100%;display:block;filter:drop-shadow(0 5px 7px rgba(0,0,0,.55))}
+.tg{transform-origin:0 0;transition:transform .14s,opacity .14s}
 #bowl-wrap.shake{animation:sh .45s}
 @keyframes sh{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px) rotate(-4deg)}40%{transform:translateX(10px) rotate(4deg)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
 .bowl{width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,#cfd8dc 65%,#90a4ae 100%);border:4px solid #455a64;display:flex;justify-content:center;align-items:center}
@@ -109,9 +111,32 @@ h1{margin:0 0 6px;color:var(--soft);font-size:1.15rem}
 <div class="w" id="order"><div id="order-head">＼ 今日の注文 ／</div><div id="order-text">???</div>
 <div id="memui"><div id="barw"><div id="bar"></div></div><button id="peek" disabled onclick="peek()">👀 もう一度見る（+1秒）</button></div></div>
 
-<div id="bowl-wrap"><div class="bowl"><div class="inner">
-<div id="b-karame"></div><div id="b-yasai"></div><div id="b-abura"></div><div id="b-ninniku"></div>
-</div></div></div>
+<div id="bowl-wrap"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<radialGradient id="gB" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#e9cd9f"/><stop offset="1" stop-color="#bf8a52"/></radialGradient>
+<radialGradient id="gR" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d9d2c5"/></radialGradient>
+<radialGradient id="gY" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="#f7fbe6"/><stop offset="1" stop-color="#aac97c"/></radialGradient>
+<radialGradient id="gC" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#e8b595"/><stop offset="1" stop-color="#c0805a"/></radialGradient>
+<clipPath id="cp"><circle cx="100" cy="100" r="78"/></clipPath>
+</defs>
+<circle cx="100" cy="100" r="97" fill="url(#gR)" stroke="#bfb8aa" stroke-width="1.5"/>
+<circle cx="100" cy="100" r="91" fill="none" stroke="#c62828" stroke-width="3"/>
+<circle cx="100" cy="100" r="94.5" fill="none" stroke="#c62828" stroke-width="1.5" stroke-dasharray="7 4"/>
+<circle cx="100" cy="100" r="85" fill="#efe6d6" stroke="#cdbfa6" stroke-width="2"/>
+<circle cx="100" cy="100" r="78" fill="url(#gB)"/>
+<circle id="b-karame" cx="100" cy="100" r="78" fill="#3d1807" opacity="0"/>
+<g clip-path="url(#cp)"><g id="n-noodle"></g></g>
+<g id="n-chashu">
+<g transform="translate(64 142) rotate(-18)"><ellipse rx="27" ry="20" fill="#8e4f2e"/><ellipse rx="24" ry="17" fill="url(#gC)"/><path d="M-16 -3q9 -9 18 -1t16 -4M-14 6q10 -6 17 0t14 -3" stroke="#f5dcc8" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".85"/></g>
+<g transform="translate(112 150) rotate(12)"><ellipse rx="26" ry="19" fill="#8e4f2e"/><ellipse rx="23" ry="16" fill="url(#gC)"/><path d="M-15 -2q9 -8 17 0t15 -3M-12 6q9 -5 16 0t12 -2" stroke="#f5dcc8" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".85"/></g>
+</g>
+<g transform="translate(152 66) rotate(16)"><rect x="-15" y="-27" width="30" height="54" rx="3" fill="#15261a" stroke="#0a140d" stroke-width="1.5"/><path d="M-8 -22v44M0 -24v48M8 -22v44" stroke="#2f4a35" stroke-width="1.2" opacity=".7"/></g>
+<g id="g-yasai" class="tg"><circle r="41" cy="3" fill="#7d9b55" opacity=".35"/><circle r="40" fill="url(#gY)"/><g id="n-cab"></g><g id="n-spr"></g></g>
+<g id="g-abura" class="tg"><g id="n-abu"></g></g>
+<g id="g-ninniku" class="tg"><circle r="13" fill="#f6edc2" opacity=".85"/><g id="n-gar"></g></g>
+<ellipse cx="68" cy="52" rx="30" ry="10" fill="#fff" opacity=".13" transform="rotate(-28 68 52)"/>
+<path d="M30 70A74 74 0 0 1 70 28" stroke="#fff" stroke-width="3" fill="none" opacity=".55" stroke-linecap="round"/>
+</svg></div>
 
 <div class="w" id="controls"></div>
 <div class="w"><button id="serve" onclick="serve()">ラーメン提供！（Enter）</button>
@@ -192,6 +217,28 @@ function resetAll(){
   for(const k in rk)rk[k]=[];stt=blank();save();saveS();updTitle();renderRank();openRec();
 }
 
+/* ---- ラーメンの絵 ---- */
+function buildBowl(){
+  let sd=7;const rn=()=>(sd=(sd*9301+49297)%233280)/233280,f=n=>n.toFixed(1);
+  let h="";
+  for(let i=0;i<10;i++){const y=22+i*17,o=i%2?0:12;
+    const d="M"+(-2+o)+" "+y+" q12 -10 24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0 t24 0";
+    h+='<path d="'+d+'" stroke="#c9a64f" stroke-width="8" fill="none" transform="translate(0 1.5)"/><path d="'+d+'" stroke="#f1d786" stroke-width="7" fill="none"/><path d="'+d+'" stroke="#fff3c4" stroke-width="2" fill="none" opacity=".6" transform="translate(0 -1.5)"/>';}
+  $("n-noodle").innerHTML=h;
+  h="";for(let i=0;i<6;i++){const a=i*1.05+rn()*.4,r=17+rn()*10;
+    h+='<ellipse cx="'+f(Math.cos(a)*r)+'" cy="'+f(Math.sin(a)*r)+'" rx="17" ry="9" fill="#c6e29a" stroke="#93b95e" stroke-width="1.2" transform="rotate('+f(a*57)+' '+f(Math.cos(a)*r)+' '+f(Math.sin(a)*r)+')"/>';}
+  $("n-cab").innerHTML=h;
+  h="";for(let i=0;i<52;i++){const a=rn()*6.28,r=Math.sqrt(rn())*33,x=Math.cos(a)*r,y=Math.sin(a)*r*.9,d=rn()*6.28,l=8+rn()*7,ex=x+Math.cos(d)*l,ey=y+Math.sin(d)*l,cx=x+Math.cos(d+.9)*l*.6,cy=y+Math.sin(d+.9)*l*.6;
+    h+='<path d="M'+f(x)+' '+f(y)+'Q'+f(cx)+' '+f(cy)+' '+f(ex)+' '+f(ey)+'" stroke="#8aa75a" stroke-width="3.6" fill="none" stroke-linecap="round" opacity=".5"/><path d="M'+f(x)+' '+f(y)+'Q'+f(cx)+' '+f(cy)+' '+f(ex)+' '+f(ey)+'" stroke="#fbfdf1" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="'+f(ex)+'" cy="'+f(ey)+'" r="2" fill="#f0dc72"/>';}
+  $("n-spr").innerHTML=h;
+  h="";for(let i=0;i<16;i++){const a=rn()*6.28,r=Math.sqrt(rn())*32,x=Math.cos(a)*r,y=Math.sin(a)*r,w=3.5+rn()*3.5;
+    h+='<ellipse cx="'+f(x)+'" cy="'+f(y)+'" rx="'+f(w)+'" ry="'+f(w*.75)+'" fill="#fff4bd" stroke="#e6c35a" stroke-width="1" transform="rotate('+f(rn()*180)+' '+f(x)+' '+f(y)+')"/><circle cx="'+f(x-w*.3)+'" cy="'+f(y-w*.3)+'" r="'+f(w*.25)+'" fill="#fff"/>';}
+  $("n-abu").innerHTML=h;
+  h="";for(let i=0;i<30;i++){const a=rn()*6.28,r=Math.sqrt(rn())*14;
+    h+='<circle cx="'+f(Math.cos(a)*r)+'" cy="'+f(Math.sin(a)*r)+'" r="'+f(1.6+rn()*1.6)+'" fill="'+(i%3?"#fffdf0":"#f2e3a0")+'" stroke="#d9c783" stroke-width=".5"/>';}
+  $("n-gar").innerHTML=h;
+}
+
 /* ---- 入力UI：段階を直接タップ ---- */
 KEYS.forEach(k=>{
   const r=document.createElement("div");r.className="row";r.id="row-"+k;
@@ -208,12 +255,11 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();s
 /* ---- 描画 ---- */
 function render(){
   KEYS.forEach(k=>document.querySelectorAll("#row-"+k+" button").forEach((b,i)=>b.classList.toggle("on",i===player[k])));
-  const ys=[0,40,60,80,100][player.yasai],as=[0,20,34,48][player.abura],ns=[[0,0],[15,10],[28,18],[40,26]][player.ninniku];
-  const y=$("b-yasai").style,a=$("b-abura").style,n=$("b-ninniku").style;
-  y.width=y.height=ys+"px";y.opacity=ys?1:0;
-  a.width=a.height=as+"px";a.opacity=as?1:0;
-  n.width=ns[0]+"px";n.height=ns[1]+"px";n.opacity=ns[0]?1:0;
-  $("b-karame").style.background=["rgba(0,0,0,0)","rgba(40,15,0,.45)","rgba(60,10,0,.8)"][player.karame];
+  const T=(id,x,y,k)=>{const e=$(id);e.style.transform="translate("+x+"px,"+y+"px) scale("+k+")";e.style.opacity=k?1:0};
+  T("g-yasai",100,100,[0,.45,.68,.88,1.08][player.yasai]);
+  T("g-abura",112,95,[0,.55,.85,1.15][player.abura]);
+  T("g-ninniku",90,80,[0,.55,.85,1.15][player.ninniku]);
+  $("b-karame").setAttribute("opacity",[0,.3,.55][player.karame]);
 }
 function updStats(){
   if(mode==="normal"){$("st-l").textContent="スコア:"+score;$("st-r").textContent="コンボ:"+combo}
@@ -329,7 +375,7 @@ function toTitle(){
   say("ゲームモードを選んで開始してください");
 }
 
-load();loadS();updTitle();player={...DEF};render();renderRank();
+buildBowl();load();loadS();updTitle();player={...DEF};render();renderRank();
 </script>
 </body>
 </html>
