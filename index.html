@@ -50,6 +50,12 @@ h1{margin:0 0 6px;color:var(--soft);font-size:1.15rem}
 #serve{width:100%;border:none;border-radius:8px;padding:13px;background:var(--ok);color:#fff;font-weight:bold;font-size:1.05rem;cursor:pointer;margin:2px 0 6px}
 #back{width:100%;border:none;border-radius:8px;padding:7px;background:#607d8b;color:#fff;font-weight:bold;font-size:.85rem;cursor:pointer}
 #msg{margin-top:8px;background:rgba(0,0,0,.4);border-radius:8px;padding:8px;text-align:center;font-size:.85rem;line-height:1.35;height:72px;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden}
+.m{background:#7e57c2}
+#memui{display:none;margin-top:6px}
+#barw{height:5px;background:var(--deep);border-radius:3px;overflow:hidden}
+#bar{height:100%;width:0;background:var(--soft)}
+#peek{width:100%;margin-top:6px;padding:8px;border:2px solid #b39ddb;border-radius:8px;background:transparent;color:#d1c4e9;font-weight:bold;font-size:.85rem;cursor:pointer}
+#peek:disabled{opacity:.35;cursor:default}
 </style>
 </head>
 <body>
@@ -59,6 +65,12 @@ h1{margin:0 0 6px;color:var(--soft);font-size:1.15rem}
 <p>ニンニク！ヤサイ！アブラ！カラメ！<br>注文どおりに最速で仕上げろ！<br><small>5人抜き：ミスは作り直し＋3秒ロス</small></p>
 <button class="big n" onclick="start('normal')">通常モード</button>
 <button class="big t" onclick="start('ta')">5人抜きタイムアタック</button>
+<div style="margin-top:8px">🧠 暗記5人抜き（コールが消える！）<br><small>見直し1回＝+1秒 ／ ミスは作り直し＋3秒</small></div>
+<div style="display:flex">
+<button class="big m" style="width:84px;padding:10px 2px" onclick="start('mem','easy')">じっくり<br><small>3秒</small></button>
+<button class="big m" style="width:84px;padding:10px 2px" onclick="start('mem','mid')">ふつう<br><small>2秒</small></button>
+<button class="big m" style="width:84px;padding:10px 2px" onclick="start('mem','hard')">瞬間<br><small>1秒</small></button>
+</div>
 </div>
 
 <div id="result">
@@ -66,7 +78,7 @@ h1{margin:0 0 6px;color:var(--soft);font-size:1.15rem}
 <div id="final-time" style="font-size:2.2rem;color:var(--soft)">0.00s</div>
 <p id="final-detail" style="margin:6px 0"></p>
 <p id="final-rec" style="margin:0 0 10px;color:var(--soft);font-weight:bold"></p>
-<button class="big t" onclick="start('ta')">もう一度挑戦</button>
+<button class="big t" onclick="retry()">もう一度挑戦</button>
 <button class="big g" onclick="toTitle()">タイトルへ</button>
 </div>
 
@@ -74,7 +86,8 @@ h1{margin:0 0 6px;color:var(--soft);font-size:1.15rem}
 <div class="w" id="stats"><span id="st-l"></span><span id="st-r"></span></div>
 <div class="w" id="timer"><div id="timer-text">0.00s</div><div id="pen"></div><div id="cd">3</div></div>
 <div class="w" id="rank"><h3 id="rank-title"></h3><ol id="rank-list"></ol></div>
-<div class="w" id="order"><div id="order-head">＼ 今日の注文 ／</div><div id="order-text">???</div></div>
+<div class="w" id="order"><div id="order-head">＼ 今日の注文 ／</div><div id="order-text">???</div>
+<div id="memui"><div id="barw"><div id="bar"></div></div><button id="peek" disabled onclick="peek()">👀 もう一度見る（+1秒）</button></div></div>
 
 <div id="bowl-wrap"><div class="bowl"><div class="inner">
 <div id="b-karame"></div><div id="b-yasai"></div><div id="b-abura"></div><div id="b-ninniku"></div>
@@ -91,8 +104,10 @@ const ST={ninniku:["なし","少なめ","マシ","マシマシ"],yasai:["抜き"
 const LB={ninniku:"ニンニク",yasai:"ヤサイ",abura:"アブラ",karame:"カラメ"};
 const DEF={ninniku:0,yasai:2,abura:0,karame:0};
 const KEYS=Object.keys(LB), PEN=3, TOTAL=5;
-const SK={normal:"jiro_v11_normal",ta:"jiro_v12_ta"};
-let mode="normal",score=0,combo=0,cust=1,penalty=0,misses=0,tStart=0,t0=0,phase="idle",order={},player={},tick=null,tm=[],rk={normal:[],ta:[]};
+const SK={normal:"jiro_v11_normal",ta:"jiro_v12_ta",mem_easy:"jiro_v12_mem_easy",mem_mid:"jiro_v12_mem_mid",mem_hard:"jiro_v12_mem_hard"};
+const SHOW={easy:3,mid:2,hard:1},LVN={easy:"じっくり",mid:"ふつう",hard:"瞬間"};
+let mode="normal",score=0,combo=0,cust=1,penalty=0,misses=0,tStart=0,t0=0,phase="idle",order={},player={},tick=null,tm=[],rk={normal:[],ta:[],mem_easy:[],mem_mid:[],mem_hard:[]},level="mid",peeks=0,showTok=0,callTxt="";
+const rkey=()=>mode==="mem"?"mem_"+level:mode;
 
 const later=(f,ms)=>{tm.push(setTimeout(f,ms))};
 function clearAll(){tm.forEach(clearTimeout);tm=[];clearInterval(tick)}
@@ -102,8 +117,9 @@ function load(){for(const k in SK){try{rk[k]=JSON.parse(localStorage.getItem(SK[
 function save(){try{for(const k in SK)localStorage.setItem(SK[k],JSON.stringify(rk[k]))}catch(e){}}
 function addRank(m,t){rk[m].push(t);rk[m].sort((a,b)=>a-b);const i=rk[m].indexOf(t);rk[m]=rk[m].slice(0,3);save();return i<3}
 function renderRank(){
-  $("rank-title").textContent=mode==="ta"?"🏆 5人抜きベスト3（ペナルティ込み）":"🏆 ベスト3（1杯）";
-  $("rank-list").innerHTML=[0,1,2].map(i=>"<li>"+(i+1)+"位：" +(rk[mode][i]!==undefined?rk[mode][i].toFixed(2)+"s":"----")+"</li>").join("");
+  const r=rk[rkey()];
+  $("rank-title").textContent=mode==="ta"?"🏆 5人抜きベスト3（ペナルティ込み）":mode==="mem"?"🧠 暗記・"+LVN[level]+"("+SHOW[level]+"秒) ベスト3":"🏆 ベスト3（1杯）";
+  $("rank-list").innerHTML=[0,1,2].map(i=>"<li>"+(i+1)+"位："+(r[i]!==undefined?r[i].toFixed(2)+"s":"----")+"</li>").join("");
 }
 
 /* ---- 入力UI：段階を直接タップ ---- */
@@ -131,25 +147,25 @@ function render(){
 }
 function updStats(){
   if(mode==="normal"){$("st-l").textContent="スコア:"+score;$("st-r").textContent="コンボ:"+combo}
-  else{$("st-l").textContent="5人抜き:"+cust+"/"+TOTAL;$("st-r").textContent="ミス:"+misses+"（+"+penalty.toFixed(0)+"s）"}
+  else{$("st-l").textContent="5人抜き:"+cust+"/"+TOTAL;$("st-r").textContent="ミス:"+misses+(mode==="mem"?" 見直し:"+peeks:"")+"（+"+penalty.toFixed(0)+"s）"}
 }
 function tickFn(){
   const now=performance.now();
-  if(mode==="ta"){if(phase==="play"||phase==="lock")$("timer-text").textContent="累計 "+((now-tStart)/1000+penalty).toFixed(2)+"s"}
+  if(mode!=="normal"){if(phase==="play"||phase==="lock")$("timer-text").textContent="累計 "+((now-tStart)/1000+penalty).toFixed(2)+"s"}
   else if(phase==="play")$("timer-text").textContent=((now-t0)/1000).toFixed(2)+"s";
 }
 function say(h){$("msg").innerHTML=h}
 function restart(id,cls){const el=$(id);el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls)}
 
 /* ---- 進行 ---- */
-function start(m){
-  clearAll();mode=m;score=0;combo=0;cust=1;penalty=0;misses=0;phase="cd";
+function start(m,lv){
+  clearAll();mode=m;if(lv)level=lv;peeks=0;showTok=0;$("memui").style.display=m==="mem"?"block":"none";$("peek").disabled=true;$("bar").style.width="0";score=0;combo=0;cust=1;penalty=0;misses=0;phase="cd";
   $("title").style.display="none";$("result").style.display="none";
   player={...DEF};render();updStats();renderRank();
-  $("order-head").textContent=m==="ta"?"＼ 1人目 ／":"＼ 今日の注文 ／";
+  $("order-head").textContent=m!=="normal"?"＼ 1人目 ／":"＼ 今日の注文 ／";
   $("order-text").textContent="???";
-  $("timer-text").textContent=m==="ta"?"累計 0.00s":"0.00s";
-  say(m==="ta"?"5人抜きスタート！ミスは作り直し＋"+PEN+"秒":"ゲームスタート！");
+  $("timer-text").textContent=m!=="normal"?"累計 0.00s":"0.00s";
+  say(m==="mem"?"暗記スタート！コールは"+SHOW[level]+"秒で消えます":m==="ta"?"5人抜きスタート！ミスは作り直し＋"+PEN+"秒":"ゲームスタート！");
   tick=setInterval(tickFn,30);
   const cd=$("cd");cd.style.display="flex";let n=3;cd.textContent=n;
   const step=()=>{
@@ -160,19 +176,33 @@ function start(m){
   later(step,700);
 }
 function nextCustomer(){
-  do{order={ninniku:rnd(4),yasai:rnd(5),abura:rnd(4),karame:rnd(3)}}while(KEYS.every(k=>order[k]===DEF[k]));
+  do{order={ninniku:rnd(4),yasai:rnd(5),abura:rnd(4),karame:rnd(3)}}while(KEYS.every(k=>order[k]===DEF[k])||(mode==="mem"&&KEYS.filter(k=>order[k]!==DEF[k]).length>3));
   player={...DEF};render();
   const c=[];
   if(order.ninniku)c.push("ニンニク"+ST.ninniku[order.ninniku]);
   if(order.yasai===0)c.push("ヤサイ抜き");else if(order.yasai!==2)c.push("ヤサイ"+ST.yasai[order.yasai]);
   if(order.abura)c.push("アブラ"+ST.abura[order.abura]);
   if(order.karame)c.push(ST.karame[order.karame]);
-  $("order-text").textContent=c.join("、");
-  $("order-head").textContent=mode==="ta"?"＼ 次！ "+cust+"人目 ／":"＼ 次！ ／";
+  callTxt=c.join("、");
+  if(mode==="mem")showCall(SHOW[level]);else $("order-text").textContent=callTxt;
+  $("order-head").textContent=mode!=="normal"?"＼ 次！ "+cust+"人目 ／":"＼ 次！ ／";
   restart("order-head","pop");
   t0=performance.now();phase="play";
 }
 const rnd=n=>Math.floor(Math.random()*n);
+
+function showCall(sec){
+  const tok=++showTok;$("order-text").textContent=callTxt;
+  const bar=$("bar");bar.style.transition="none";bar.style.width="100%";void bar.offsetWidth;
+  bar.style.transition="width "+sec+"s linear";bar.style.width="0%";$("peek").disabled=true;
+  later(()=>{if(tok===showTok){$("order-text").textContent="🙈（コールは消えた！）";$("peek").disabled=false}},sec*1000);
+}
+function peek(){
+  if(mode!=="mem"||phase!=="play"||$("peek").disabled)return;
+  peeks++;penalty+=1;updStats();
+  $("pen").textContent="+1.00s";restart("pen","go");showCall(1.5);
+}
+function retry(){start(mode,level)}
 
 function serve(){
   if(phase!=="play")return;
@@ -181,7 +211,7 @@ function serve(){
   const diff=KEYS.reduce((s,k)=>s+Math.abs(player[k]-order[k]),0);
   phase="lock";
 
-  if(mode==="ta"){
+  if(mode!=="normal"){
     if(bad.length){
       misses++;penalty+=PEN;updStats();
       bad.forEach(k=>$("row-"+k).classList.add("bad"));
@@ -212,10 +242,10 @@ function serve(){
 function finish(){
   const total=(performance.now()-tStart)/1000+penalty;
   clearInterval(tick);phase="done";
-  const rec=addRank("ta",total);renderRank();
+  const rec=addRank(rkey(),total);renderRank();
   $("timer-text").textContent="累計 "+total.toFixed(2)+"s";
   $("final-time").textContent=total.toFixed(2)+"s";
-  $("final-detail").textContent="実タイム "+(total-penalty).toFixed(2)+"s ＋ ミス"+misses+"回 × "+PEN+"秒 = +"+penalty.toFixed(1)+"s";
+  $("final-detail").textContent="実タイム "+(total-penalty).toFixed(2)+"s ＋ ミス"+misses+"回×"+PEN+"秒"+(mode==="mem"?" ＋ 見直し"+peeks+"回×1秒":"")+" = +"+penalty.toFixed(1)+"s";
   $("final-rec").textContent=rec?"🏆 ベスト3入り！":"";
   later(()=>{$("result").style.display="flex"},500);
 }
