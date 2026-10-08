@@ -1,939 +1,1523 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>二郎系スピードアタック</title>
-    <style>
-        :root {
-            --bg-color: #263238;
-        }
-        body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: #fff;
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
-            box-sizing: border-box;
-            position: relative;
-        }
-        h1 {
-            margin: 0 0 6px 0;
-            font-size: 1.3rem;
-            color: #ffb74d;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-        /* タイトル画面・リザルト画面オーバーレイ共通 */
-        #title-screen, #result-screen {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(26, 34, 39, 0.96);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            padding: 20px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        #result-screen {
-            display: none; /* 初期状態は非表示 */
-        }
-        #title-screen h2, #result-screen h2 {
-            font-size: 1.8rem;
-            color: #ffb74d;
-            margin-bottom: 8px;
-            text-shadow: 0 0 10px rgba(255, 183, 77, 0.5);
-        }
-        #title-screen p, #result-screen p {
-            font-size: 0.9rem;
-            color: #b0bec5;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            max-width: 400px;
-        }
-        .mode-select-buttons, .result-screen-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 100%;
-            max-width: 280px;
-        }
-        .btn-start {
-            padding: 12px 20px;
-            font-size: 1rem;
-            font-weight: bold;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            transition: transform 0.1s, background 0.2s;
-        }
-        .btn-start:active {
-            transform: scale(0.95);
-        }
-        #btn-normal-mode {
-            background: #ff9800;
-        }
-        #btn-timeattack-mode {
-            background: #e91e63;
-        }
-        #btn-retry-ta {
-            background: #e91e63;
-        }
-        #btn-back-title {
-            background: #546e7a;
-        }
+<title>二郎系スピードアタック Ver1.1</title>
 
-        /* スコア・ステータスバー */
-        #game-stats {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 440px;
-            margin-bottom: 6px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            color: #eceff1;
-            background: #37474f;
-            padding: 6px 12px;
-            border-radius: 6px;
-            box-sizing: border-box;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
+<style>
 
-        /* ストップウォッチ（経過時間表示）エリア */
-        #timer-display-container {
-            width: 100%;
-            max-width: 440px;
-            background: #1e272c;
-            border: 2px solid #546e7a;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            padding: 4px;
-            text-align: center;
-            box-sizing: border-box;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
-            position: relative;
-        }
-        #timer-label {
-            font-size: 0.7rem;
-            color: #90a4ae;
-            margin-bottom: 1px;
-            letter-spacing: 1px;
-        }
-        #stopwatch-text {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #ffb74d;
-            letter-spacing: 2px;
-            text-shadow: 0 0 6px rgba(255, 183, 77, 0.4);
-        }
+:root{
+    --bg:#263238;
+    --panel:#37474f;
+    --accent:#ff9800;
+}
 
-        /* カウントダウンオーバーレイ */
-        #countdown-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(30, 39, 44, 0.92);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            border-radius: 4px;
-            z-index: 10;
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: #ffb74d;
-            font-family: 'Courier New', Courier, monospace;
-            text-shadow: 0 0 8px rgba(255, 183, 77, 0.6);
-            letter-spacing: 2px;
-        }
+*{
+    box-sizing:border-box;
+}
 
-        /* ランキング表示パネル（ベスト3用コンパクト化） */
-        #ranking-panel {
-            width: 100%;
-            max-width: 440px;
-            background: #37474f;
-            border: 1px solid #546e7a;
-            border-radius: 6px;
-            padding: 5px 10px;
-            margin-bottom: 8px;
-            box-sizing: border-box;
-            font-size: 0.8rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        #ranking-title {
-            font-weight: bold;
-            color: #ffb74d;
-            margin-bottom: 2px;
-            text-align: center;
-            border-bottom: 1px solid #455a64;
-            padding-bottom: 2px;
-            font-size: 0.75rem;
-        }
-        .ranking-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        .ranking-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 1px 0;
-            color: #eceff1;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        .ranking-item span:first-child {
-            font-weight: bold;
-        }
+body{
+    margin:0;
+    padding:8px;
+    background:var(--bg);
+    color:#fff;
+    font-family:Arial, Helvetica, sans-serif;
 
-        /* 画面上部：注文エリア */
-        #order-container {
-            background: #37474f;
-            border: 2px solid #ffb74d;
-            border-radius: 8px;
-            padding: 6px 15px;
-            margin-bottom: 8px;
-            text-align: center;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-            max-width: 440px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        #order-title {
-            font-size: 0.75rem;
-            color: #b0bec5;
-            margin-bottom: 1px;
-        }
-        #order-text {
-            font-size: 1rem;
-            font-weight: bold;
-            color: #fff;
-        }
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:100vh;
+}
 
-        /* 画面中央：丼エリア */
-        #bowl-container {
-            position: relative;
-            width: 170px;
-            height: 170px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .bowl-top {
-            position: absolute;
-            width: 160px;
-            height: 160px;
-            background: radial-gradient(circle, #cfd8dc 60%, #90a4ae 100%);
-            border-radius: 50%;
-            border: 5px solid #37474f;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
-        .bowl-inner-top {
-            width: 140px;
-            height: 140px;
-            background: #3e2723;
-            border-radius: 50%;
-            position: relative;
-            box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
-        }
+h1{
+    margin:0 0 6px 0;
+    color:#ffb74d;
+    font-size:1.2rem;
+}
 
-        #topping-karame {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            border-radius: 50%;
-            background: rgba(20, 5, 0, 0);
-            transition: background 0.2s ease;
-            pointer-events: none;
-            z-index: 2;
-        }
+/*====================
+タイトル・結果
+====================*/
 
-        #topping-yasai {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: #dcedc8;
-            border-radius: 50%;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-            z-index: 3;
-            transition: all 0.2s ease;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border: 2px dashed #c5e1a5;
-        }
+#title-screen,
+#result-screen{
 
-        #topping-ninniku {
-            position: absolute;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #ffffff;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            opacity: 0;
-            z-index: 4;
-            transition: all 0.2s ease;
-        }
+    position:fixed;
+    inset:0;
 
-        /* 画面下部：操作ボタンエリア */
-        .controls-section {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 100%;
-            max-width: 400px;
-        }
-        .button-group {
-            display: flex;
-            gap: 6px;
-            justify-content: space-between;
-        }
-        .btn-toppings {
-            flex: 1;
-            padding: 8px 4px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            background: #ff9800;
-            color: #fff;
-            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
-            transition: transform 0.1s, background 0.2s;
-            text-align: center;
-        }
-        .btn-toppings:active {
-            transform: scale(0.95);
-            background: #f57c00;
-        }
-        .btn-action {
-            width: 100%;
-            padding: 10px;
-            font-size: 1rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            background: #4caf50;
-            color: white;
-            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
-            transition: background 0.2s;
-        }
-        .btn-action:hover {
-            background: #43a047;
-        }
+    background:rgba(20,20,20,.95);
 
-        /* 結果表示エリア */
-        #result-modal {
-            margin-top: 8px;
-            padding: 8px;
-            background: rgba(0,0,0,0.6);
-            border-radius: 6px;
-            text-align: center;
-            max-width: 440px;
-            width: 100%;
-            min-height: 35px;
-            box-sizing: border-box;
-            font-size: 0.85rem;
-        }
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
 
-        .level-badge {
-            display: block;
-            font-size: 0.7rem;
-            background: rgba(255,255,255,0.2);
-            padding: 1px 3px;
-            border-radius: 3px;
-            margin-top: 2px;
-        }
-    </style>
+    z-index:100;
+    text-align:center;
+    padding:20px;
+}
+
+#result-screen{
+    display:none;
+}
+
+.start-btn{
+
+    width:260px;
+
+    margin:5px;
+    padding:12px;
+
+    border:none;
+    border-radius:10px;
+
+    cursor:pointer;
+
+    color:#fff;
+    font-size:1rem;
+    font-weight:bold;
+}
+
+.normal-btn{
+    background:#ff9800;
+}
+
+.ta-btn{
+    background:#e91e63;
+}
+
+.back-btn{
+    background:#607d8b;
+}
+
+/*====================
+ステータス
+====================*/
+
+#game-stats{
+
+    width:100%;
+    max-width:440px;
+
+    display:flex;
+    justify-content:space-between;
+
+    background:var(--panel);
+
+    padding:6px 12px;
+
+    border-radius:6px;
+
+    margin-bottom:6px;
+    font-size:0.9rem;
+}
+
+#timer-box{
+
+    width:100%;
+    max-width:440px;
+
+    background:#1b252b;
+
+    border:2px solid #546e7a;
+
+    border-radius:8px;
+
+    text-align:center;
+
+    padding:6px;
+
+    margin-bottom:6px;
+
+    position:relative;
+}
+
+#timer-text{
+
+    font-size:1.4rem;
+    color:#ffb74d;
+    font-family:monospace;
+}
+
+/*====================
+ランキング
+====================*/
+
+#ranking{
+
+    width:100%;
+    max-width:440px;
+
+    background:var(--panel);
+
+    border-radius:8px;
+
+    padding:6px 8px;
+    margin-bottom:6px;
+    font-size:0.85rem;
+}
+
+#ranking h3{
+    text-align:center;
+    margin:0 0 4px 0;
+    color:#ffb74d;
+    font-size:0.95rem;
+}
+
+#ranking-list{
+    margin:0;
+    padding:0 0 0 20px;
+}
+
+/*====================
+注文
+====================*/
+
+#order-box{
+
+    width:100%;
+    max-width:440px;
+
+    background:var(--panel);
+
+    padding:8px;
+
+    border-radius:8px;
+
+    border:2px solid #ffb74d;
+
+    text-align:center;
+
+    margin-bottom:8px;
+    font-size:0.85rem;
+}
+
+#order-text{
+    font-weight:bold;
+    font-size:0.95rem;
+    margin-top:2px;
+}
+
+/*====================
+丼
+====================*/
+
+#bowl-container{
+
+    width:150px;
+    height:150px;
+
+    position:relative;
+
+    margin-bottom:10px;
+}
+
+.bowl{
+
+    width:150px;
+    height:150px;
+
+    border-radius:50%;
+
+    background:
+    radial-gradient(circle,
+    #cfd8dc 65%,
+    #90a4ae 100%);
+
+    border:4px solid #455a64;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.bowl-inner{
+
+    width:125px;
+    height:125px;
+
+    background:#3e2723;
+
+    border-radius:50%;
+
+    position:relative;
+
+    overflow:hidden;
+}
+
+/* カラメ */
+
+#topping-karame{
+
+    position:absolute;
+    inset:0;
+
+    border-radius:50%;
+
+    z-index:1;
+}
+
+/* ヤサイ */
+
+#topping-yasai{
+
+    position:absolute;
+
+    top:50%;
+    left:50%;
+
+    transform:translate(-50%,-50%);
+
+    background:#dcedc8;
+
+    border-radius:50%;
+
+    z-index:2;
+}
+
+/* アブラ */
+
+#topping-abura{
+
+    position:absolute;
+
+    top:55%;
+    left:55%;
+
+    transform:translate(-50%,-50%);
+
+    background:#f5e6a1;
+
+    border-radius:50%;
+
+    z-index:3;
+
+    opacity:0;
+}
+
+/* ニンニク */
+
+#topping-ninniku{
+
+    position:absolute;
+
+    top:14px;
+    left:50%;
+
+    transform:translateX(-50%);
+
+    background:white;
+
+    border-radius:50%;
+
+    z-index:4;
+
+    opacity:0;
+}
+
+/*====================
+ボタン
+====================*/
+
+.controls{
+
+    width:100%;
+    max-width:440px;
+}
+
+.control-row{
+
+    display:flex;
+    gap:6px;
+
+    margin-bottom:6px;
+}
+
+.topping-btn{
+
+    flex:1;
+
+    border:none;
+
+    border-radius:8px;
+
+    background:#ff9800;
+    color:white;
+
+    padding:8px 4px;
+
+    font-weight:bold;
+
+    cursor:pointer;
+    font-size:0.9rem;
+}
+
+.level{
+
+    display:block;
+
+    margin-top:2px;
+
+    font-size:.7rem;
+}
+
+#serve-btn{
+
+    width:100%;
+
+    border:none;
+
+    border-radius:8px;
+
+    padding:10px;
+
+    background:#4caf50;
+
+    color:white;
+
+    font-weight:bold;
+
+    font-size:0.95rem;
+
+    cursor:pointer;
+
+    margin-bottom:6px;
+}
+
+.back-title-btn{
+
+    width:100%;
+
+    border:none;
+
+    border-radius:8px;
+
+    padding:7px;
+
+    background:#607d8b;
+
+    color:white;
+
+    font-weight:bold;
+
+    font-size:0.85rem;
+
+    cursor:pointer;
+}
+
+/*====================
+結果表示（固定高さを設定してガタつき防止）
+====================*/
+
+#result-area{
+
+    width:100%;
+    max-width:440px;
+
+    margin-top:8px;
+
+    background:rgba(0,0,0,.4);
+
+    border-radius:8px;
+
+    padding:8px;
+
+    text-align:center;
+    font-size:0.85rem;
+    line-height:1.3;
+
+    /* スマホで画面が崩れないよう高さを固定 */
+    height:78px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+}
+
+#countdown{
+
+    position:absolute;
+    inset:0;
+
+    display:none;
+
+    justify-content:center;
+    align-items:center;
+
+    background:rgba(0,0,0,.85);
+
+    color:#ffb74d;
+
+    font-size:2rem;
+    font-weight:bold;
+}
+
+</style>
 </head>
+
 <body>
 
-    <!-- タイトル画面 -->
-    <div id="title-screen">
-        <h2>🍜 二郎系スピードアタック</h2>
-        <p>
-            客のコール（注文）をカウントダウンの<b>後</b>に見極め、<br>
-            誰よりも速く正確にラーメンを作り上げろ！
-        </p>
-        <div class="mode-select-buttons">
-            <button class="btn-start" id="btn-normal-mode" onclick="startGame('normal')">通常モード (エンドレス)</button>
-            <button class="btn-start" id="btn-timeattack-mode" onclick="startGame('timeattack')">⚡ 5人抜きタイムアタック</button>
-        </div>
+<div id="title-screen">
+
+<h2>🍜 二郎系スピードアタック Ver1.1</h2>
+
+<p>
+ニンニク！ヤサイ！アブラ！カラメ！
+<br>
+注文を正確かつ最速で再現せよ！
+</p>
+
+<button class="start-btn normal-btn"
+onclick="startGame('normal')">
+通常モード
+</button>
+
+<button class="start-btn ta-btn"
+onclick="startGame('timeattack')">
+5人抜きタイムアタック
+</button>
+
+</div>
+
+<div id="result-screen">
+
+<h2>🎉 完走！</h2>
+
+<div id="final-time"
+style="font-size:2rem;color:#ffb74d;">
+0.00s
+</div>
+
+<button class="start-btn ta-btn"
+onclick="retryTA()">
+もう一度挑戦
+</button>
+
+<button class="start-btn back-btn"
+onclick="returnTitle()">
+タイトルへ
+</button>
+
+</div>
+
+<h1>🍜 二郎系スピードアタック Ver1.1</h1>
+
+<div id="game-stats">
+
+<span id="stat-left">
+スコア:0
+</span>
+
+<span id="stat-right">
+コンボ:0
+</span>
+
+</div>
+
+<div id="timer-box">
+
+<div id="timer-text">
+0.00s
+</div>
+
+<div id="countdown">
+3
+</div>
+
+</div>
+
+<div id="ranking">
+
+<h3 id="ranking-title">
+🏆ベスト3
+</h3>
+
+<ul id="ranking-list"></ul>
+
+</div>
+
+<div id="order-box">
+
+<div>＼ 今日の注文 ／</div>
+
+<div id="order-text">
+???
+</div>
+
+</div>
+
+<div id="bowl-container">
+
+<div class="bowl">
+
+<div class="bowl-inner">
+
+<div id="topping-karame"></div>
+
+<div id="topping-yasai"></div>
+
+<div id="topping-abura"></div>
+
+<div id="topping-ninniku"></div>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="controls">
+
+    <div class="control-row">
+
+        <button class="topping-btn"
+        onclick="addIngredient('ninniku')">
+            ニンニク
+            <span class="level"
+            id="val-ninniku">なし</span>
+        </button>
+
+        <button class="topping-btn"
+        onclick="addIngredient('yasai')">
+            ヤサイ
+            <span class="level"
+            id="val-yasai">そのまま</span>
+        </button>
+
     </div>
 
-    <!-- 5人抜き完了時専用 リザルト画面 -->
-    <div id="result-screen">
-        <h2>🎉 5人抜き完了！</h2>
-        <p style="margin-bottom: 8px;">今回の完走トータルタイム</p>
-        <div id="final-time-display" style="font-family: 'Courier New', Courier, monospace; font-size: 2.2rem; font-weight: bold; color: #ffb74d; margin-bottom: 15px; text-shadow: 0 0 8px rgba(255, 183, 77, 0.6);">0.00s</div>
-        <div id="result-message-sub" style="font-size: 0.85rem; color: #b0bec5; margin-bottom: 20px;">ランキングに記録されました！</div>
-        <div class="result-screen-buttons">
-            <button class="btn-start" id="btn-retry-ta" onclick="retryTimeAttack()">もう一度挑戦する</button>
-            <button class="btn-start" id="btn-back-title" onclick="returnToTitle()">タイトルへ戻る</button>
-        </div>
+    <div class="control-row">
+
+        <button class="topping-btn"
+        onclick="addIngredient('abura')">
+            アブラ
+            <span class="level"
+            id="val-abura">なし</span>
+        </button>
+
+        <button class="topping-btn"
+        onclick="addIngredient('karame')">
+            カラメ
+            <span class="level"
+            id="val-karame">なし</span>
+        </button>
+
     </div>
 
-    <h1>🍜 二郎系スピードアタック</h1>
+    <button id="serve-btn"
+    onclick="submitOrder()">
+        ラーメン提供！
+    </button>
 
-    <!-- スコア＆コンボ / タイムアタック情報 -->
-    <div id="game-stats">
-        <span id="stat-left">スコア: 0 pt</span>
-        <span id="stat-right">コンボ: 0</span>
-    </div>
+    <button class="back-title-btn"
+    onclick="returnTitle()">
+        🏠 タイトルへ戻る
+    </button>
 
-    <!-- ストップウォッチ（経過時間表示） -->
-    <div id="timer-display-container">
-        <div id="timer-label">ELAPSED TIME</div>
-        <div id="stopwatch-text">0.00s</div>
-        <!-- カウントダウン表示レイヤー -->
-        <div id="countdown-overlay">3</div>
-    </div>
+</div>
 
-    <!-- ランキング表示パネル (ベスト3) -->
-    <div id="ranking-panel">
-        <div id="ranking-title">🏆 ベスト3</div>
-        <ul id="ranking-list" class="ranking-list">
-            <!-- JavaScriptで動的生成 -->
-        </ul>
-    </div>
+<div id="result-area">
+    ゲームモードを選んで開始してください
+</div>
 
-    <!-- 画面上部：注文エリア -->
-    <div id="order-container">
-        <div id="order-title">＼ 今日の注文（コール） ／</div>
-        <div id="order-text">???</div>
-    </div>
+<script>
 
-    <!-- 画面中央：丼エリア -->
-    <div id="bowl-container">
-        <div class="bowl-top">
-            <div class="bowl-inner-top">
-                <div id="topping-karame"></div>
-                <div id="topping-yasai"></div>
-                <div id="topping-ninniku"></div>
-            </div>
-        </div>
-    </div>
+/*====================
+定数
+====================*/
 
-    <!-- 画面下部：操作ボタンエリア -->
-    <div class="controls-section">
-        <div class="button-group">
-            <button class="btn-toppings" onclick="addIngredient('ninniku')">
-                ニンニク
-                <span id="val-ninniku" class="level-badge">なし</span>
-            </button>
-            <button class="btn-toppings" onclick="addIngredient('yasai')">
-                ヤサイ
-                <span id="val-yasai" class="level-badge">そのまま</span>
-            </button>
-            <button class="btn-toppings" onclick="addIngredient('karame')">
-                カラメ
-                <span id="val-karame" class="level-badge">なし</span>
-            </button>
-        </div>
-        <button class="btn-action" onclick="submitOrder()">ラーメン提供！</button>
-    </div>
+const NINNIKU_STAGES = [
+    "なし",
+    "少なめ",
+    "マシ",
+    "マシマシ"
+];
 
-    <div id="result-modal">
-        ゲームモードを選んで挑戦しよう！
-    </div>
+const YASAI_STAGES = [
+    "抜き",
+    "少なめ",
+    "そのまま",
+    "マシ",
+    "マシマシ"
+];
 
-    <script>
-        const NINNIKU_STAGES = [
-            { level: 0, name: "なし" },
-            { level: 1, name: "少なめ" },
-            { level: 2, name: "マシ" },
-            { level: 3, name: "マシマシ" }
-        ];
+const ABURA_STAGES = [
+    "なし",
+    "少し",
+    "マシ",
+    "マシマシ"
+];
 
-        const YASAI_STAGES = [
-            { level: 0, name: "抜き" },
-            { level: 1, name: "少なめ" },
-            { level: 2, name: "そのまま" },
-            { level: 3, name: "マシ" },
-            { level: 4, name: "マシマシ" }
-        ];
-        const YASAI_PLAYER_CYCLE = [2, 0, 1, 3, 4]; 
+const KARAME_STAGES = [
+    "なし",
+    "カラメ",
+    "カラカラ"
+];
 
-        const KARAME_STAGES = [
-            { level: 0, name: "なし" },
-            { level: 1, name: "カラメ" },
-            { level: 2, name: "カラカラ" }
-        ];
+/*====================
+変数
+====================*/
 
-        let order = { ninniku: 0, yasai: 2, karame: 0 };
-        let player = { ninniku: 0, yasai: 2, karame: 0 };
+let gameMode="normal";
 
-        let gameMode = 'normal'; 
-        let totalScore = 0;
-        let combo = 0;
+let score=0;
+let combo=0;
 
-        let taCurrentCustomer = 1; 
-        let taStartTime = 0;       
+let elapsedTime=0;
 
-        let elapsedTime = 0.00; 
-        let timerInterval = null;
-        let isPlaying = false;
-        let isWaitingNext = false; 
-        let isCountDown = false;
+let timerInterval=null;
+let countdownInterval=null;
 
-        let normalRanking = [];
-        let taRanking = [];
+let taCustomer=1;
+let taStartTime=0;
 
-        function loadRankings() {
-            try {
-                const savedNormal = localStorage.getItem('jiro_ranking');
-                if (savedNormal) normalRanking = JSON.parse(savedNormal);
-                
-                const savedTA = localStorage.getItem('jiro_ta_ranking');
-                if (savedTA) taRanking = JSON.parse(savedTA);
-            } catch (e) {
-                normalRanking = [];
-                taRanking = [];
-            }
-            renderRanking();
+let isPlaying=false;
+
+let order={};
+let player={};
+
+let rankingNormal=[];
+let rankingTA=[];
+
+/*====================
+ランキング
+====================*/
+
+function loadRankings(){
+
+    rankingNormal=
+    JSON.parse(
+        localStorage.getItem(
+            "jiro_v11_normal"
+        )||"[]"
+    );
+
+    rankingTA=
+    JSON.parse(
+        localStorage.getItem(
+            "jiro_v11_ta"
+        )||"[]"
+    );
+
+    renderRanking();
+}
+
+function saveRankings(){
+
+    localStorage.setItem(
+        "jiro_v11_normal",
+        JSON.stringify(rankingNormal)
+    );
+
+    localStorage.setItem(
+        "jiro_v11_ta",
+        JSON.stringify(rankingTA)
+    );
+}
+
+function renderRanking(){
+
+    const list=
+    document.getElementById(
+        "ranking-list"
+    );
+
+    list.innerHTML="";
+
+    const ranking=
+    gameMode==="timeattack"
+    ? rankingTA
+    : rankingNormal;
+
+    for(let i=0;i<3;i++){
+
+        const li=
+        document.createElement("li");
+
+        if(ranking[i]!==undefined){
+
+            li.textContent=
+            (i+1)+"位 : "
+            +ranking[i].toFixed(2)
+            +"s";
+
+        }else{
+
+            li.textContent=
+            (i+1)+"位 : ----";
         }
 
-        function saveRankings() {
-            try {
-                localStorage.setItem('jiro_ranking', JSON.stringify(normalRanking));
-                localStorage.setItem('jiro_ta_ranking', JSON.stringify(taRanking));
-            } catch (e) {}
+        list.appendChild(li);
+    }
+}
+
+/*====================
+開始
+====================*/
+
+function startGame(mode){
+
+    gameMode=mode;
+
+    document.getElementById(
+        "title-screen"
+    ).style.display="none";
+
+    document.getElementById(
+        "result-screen"
+    ).style.display="none";
+
+    document.getElementById(
+        "result-area"
+    ).innerHTML= (gameMode === "timeattack") ? "5人抜きスタート！" : "ゲームスタート！";
+
+    renderRanking();
+
+    score=0;
+    combo=0;
+
+    taCustomer=1;
+
+    updateStats();
+
+    if(gameMode==="timeattack"){
+
+        taStartTime=Date.now();
+    }
+
+    initCustomer();
+}
+
+/*====================
+客生成
+====================*/
+
+function initCustomer(){
+
+    order={
+
+        ninniku:
+        Math.floor(
+            Math.random()*4
+        ),
+
+        yasai:
+        Math.floor(
+            Math.random()*5
+        ),
+
+        abura:
+        Math.floor(
+            Math.random()*4
+        ),
+
+        karame:
+        Math.floor(
+            Math.random()*3
+        )
+    };
+
+    player={
+
+        ninniku:0,
+        yasai:2,
+        abura:0,
+        karame:0
+    };
+
+    updateDisplay();
+
+    document.getElementById(
+        "order-text"
+    ).innerText="???";
+
+    startCountdown();
+}
+
+/*====================
+コール生成
+====================*/
+
+function revealOrder(){
+
+    let calls=[];
+
+    if(order.ninniku>0){
+
+        calls.push(
+        "ニンニク "
+        +NINNIKU_STAGES[
+            order.ninniku
+        ]);
+    }
+
+    if(order.yasai===0){
+
+        calls.push(
+        "ヤサイ抜き");
+    }
+
+    else if(order.yasai!==2){
+
+        calls.push(
+        "ヤサイ "
+        +YASAI_STAGES[
+            order.yasai
+        ]);
+    }
+
+    if(order.abura>0){
+
+        calls.push(
+        "アブラ "
+        +ABURA_STAGES[
+            order.abura
+        ]);
+    }
+
+    if(order.karame>0){
+
+        calls.push(
+        KARAME_STAGES[
+            order.karame
+        ]);
+    }
+
+    document.getElementById(
+        "order-text"
+    ).innerText=
+
+    calls.length
+    ? calls.join("、")
+    : "（そのまま）";
+}
+
+/*====================
+カウントダウン
+====================*/
+
+function startCountdown(){
+
+    isPlaying=false;
+
+    clearInterval(timerInterval);
+    clearInterval(countdownInterval);
+
+    if(gameMode === "normal"){
+        document.getElementById("timer-text").innerText = "0.00s";
+    } else {
+        const currentTotal = ((Date.now() - taStartTime) / 1000).toFixed(2);
+        document.getElementById("timer-text").innerText = currentTotal + "s (累計)";
+    }
+
+    elapsedTime=0;
+
+    const cd=
+    document.getElementById(
+        "countdown"
+    );
+
+    cd.style.display="flex";
+
+    let count=3;
+
+    cd.innerText=count;
+
+    countdownInterval=
+    setInterval(()=>{
+
+        count--;
+
+        if(count>0){
+
+            cd.innerText=count;
         }
 
-        function renderRanking() {
-            const listElem = document.getElementById('ranking-list');
-            const titleElem = document.getElementById('ranking-title');
-            listElem.innerHTML = '';
+        else if(count===0){
 
-            let currentRanking = (gameMode === 'timeattack') ? taRanking : normalRanking;
-            titleElem.innerText = (gameMode === 'timeattack') ? '🏆 5人抜きベスト3' : '🏆 早出しベスト3';
-
-            if (currentRanking.length === 0) {
-                let msg = (gameMode === 'timeattack') ? '記録なし（5人完走しよう！）' : '記録なし';
-                listElem.innerHTML = `<li class="ranking-item" style="justify-content: center; color: #90a4ae;"><span>${msg}</span></li>`;
-                return;
-            }
-
-            // ベスト3に変更
-            for (let i = 0; i < 3; i++) {
-                const rankNum = i + 1;
-                const record = currentRanking[i];
-                const li = document.createElement('li');
-                li.className = 'ranking-item';
-
-                if (record) {
-                    li.innerHTML = `<span>${rankNum}位</span><span>${record.toFixed(2)}s</span>`;
-                } else {
-                    li.innerHTML = `<span>${rankNum}位</span><span>--.--s</span>`;
-                }
-                listElem.appendChild(li);
-            }
-        }
-
-        function checkAndAddNormalRanking(time) {
-            normalRanking.push(time);
-            normalRanking.sort((a, b) => a - b);
-            if (normalRanking.length > 3) normalRanking = normalRanking.slice(0, 3); // 上位3件に制限
-            saveRankings();
-            if (gameMode === 'normal') renderRanking();
-        }
-
-        function checkAndAddTARanking(time) {
-            taRanking.push(time);
-            taRanking.sort((a, b) => a - b);
-            if (taRanking.length > 3) taRanking = taRanking.slice(0, 3); // 上位3件に制限
-            saveRankings();
-            if (gameMode === 'timeattack') renderRanking();
-        }
-
-        function startGame(mode) {
-            gameMode = mode;
-            document.getElementById('title-screen').style.display = 'none';
-            document.getElementById('result-screen').style.display = 'none';
-            renderRanking();
-            
-            if (gameMode === 'normal') {
-                totalScore = 0;
-                combo = 0;
-                initCustomer();
-            } else {
-                taCurrentCustomer = 1;
-                if (timerInterval) clearInterval(timerInterval);
-                document.getElementById('stopwatch-text').innerText = "0.00s";
-
-                initTACustomerWithCountdown();
-            }
-
-            updateStatsUI();
-        }
-
-        function retryTimeAttack() {
-            document.getElementById('result-screen').style.display = 'none';
-            startGame('timeattack');
-        }
-
-        function initCustomer() {
-            isWaitingNext = false;
-            order.ninniku = Math.floor(Math.random() * NINNIKU_STAGES.length);
-            order.yasai = Math.floor(Math.random() * YASAI_STAGES.length);
-            order.karame = Math.floor(Math.random() * KARAME_STAGES.length);
-
-            document.getElementById('order-text').innerText = "???";
-
-            player = { ninniku: 0, yasai: 2, karame: 0 };
-            updateDisplay();
-
-            elapsedTime = 0.00;
-            document.getElementById('stopwatch-text').innerText = "0.00s";
-            
-            isCountDown = true;
-            isPlaying = false;
-            if (timerInterval) clearInterval(timerInterval);
-
-            const overlay = document.getElementById('countdown-overlay');
-            overlay.style.display = 'flex';
-            
-            let count = 3;
-            overlay.innerText = count;
-            
-            document.getElementById('result-modal').innerText = "【通常モード】 カウントダウン中...";
-
-            let countInterval = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    overlay.innerText = count;
-                } else if (count === 0) {
-                    overlay.innerText = "GO!";
-                    revealOrder();
-                } else {
-                    clearInterval(countInterval);
-                    overlay.style.display = 'none';
-                    startMeasurement();
-                }
-            }, 800);
-        }
-
-        function initTACustomerWithCountdown() {
-            isWaitingNext = false;
-            order.ninniku = Math.floor(Math.random() * NINNIKU_STAGES.length);
-            order.yasai = Math.floor(Math.random() * YASAI_STAGES.length);
-            order.karame = Math.floor(Math.random() * KARAME_STAGES.length);
-
-            document.getElementById('order-text').innerText = "???";
-
-            player = { ninniku: 0, yasai: 2, karame: 0 };
-            updateDisplay();
-            
-            isCountDown = true;
-            isPlaying = false;
-
-            const overlay = document.getElementById('countdown-overlay');
-            overlay.style.display = 'flex';
-            
-            let count = 3;
-            overlay.innerText = count;
-            
-            document.getElementById('result-modal').innerText = `【5人抜き 👤${taCurrentCustomer}/5人目】 カウントダウン...`;
-
-            let countInterval = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    overlay.innerText = count;
-                } else if (count === 0) {
-                    overlay.innerText = "GO!";
-                    revealOrder();
-                } else {
-                    clearInterval(countInterval);
-                    overlay.style.display = 'none';
-                    
-                    taStartTime = Date.now();
-                    startTAMeasurement();
-                    
-                    isPlaying = true; 
-                    document.getElementById('result-modal').innerText = "調理中！素早くコールを合わせろ！";
-                }
-            }, 800);
-        }
-
-        function initTACustomerInstant() {
-            isWaitingNext = false;
-            order.ninniku = Math.floor(Math.random() * NINNIKU_STAGES.length);
-            order.yasai = Math.floor(Math.random() * YASAI_STAGES.length);
-            order.karame = Math.floor(Math.random() * KARAME_STAGES.length);
-
-            player = { ninniku: 0, yasai: 2, karame: 0 };
-            updateDisplay();
-
+            cd.innerText="GO!";
             revealOrder();
-            isPlaying = true;
-            
-            document.getElementById('result-modal').innerText = `【5人抜き 👤${taCurrentCustomer}/5人目】 調理中！素早くコールを合わせろ！`;
         }
 
-        function revealOrder() {
-            const ninnikuName = NINNIKU_STAGES.find(s => s.level === order.ninniku).name;
-            const yasaiName = YASAI_STAGES.find(s => s.level === order.yasai).name;
-            const karameName = KARAME_STAGES.find(s => s.level === order.karame).name;
+        else{
 
-            let ninnikuCall = ninnikuName === "なし" ? "" : `ニンニク ${ninnikuName}`;
-            let yasaiCall = "";
-            if (yasaiName === "抜き") {
-                yasaiCall = "ヤサイ抜き";
-            } else if (yasaiName === "そのまま") {
-                yasaiCall = ""; 
-            } else {
-                yasaiCall = `ヤサイ ${yasaiName}`;
-            }
-            let karameCall = karameName === "なし" ? "" : karameName;
+            clearInterval(countdownInterval);
 
-            let calls = [ninnikuCall, yasaiCall, karameCall].filter(c => c !== "");
-            let orderTextStr = calls.length > 0 ? calls.join("、") : "（そのまま）";
+            cd.style.display="none";
 
-            document.getElementById('order-text').innerText = orderTextStr;
+            startTimer();
+
+            isPlaying=true;
         }
 
-        function startMeasurement() {
-            isCountDown = false;
-            isPlaying = true;
+    },800);
+}
 
-            let lastTime = Date.now();
-            timerInterval = setInterval(() => {
-                if (!isPlaying) return;
-                
-                let now = Date.now();
-                let delta = (now - lastTime) / 1000;
-                lastTime = now;
+/*====================
+タイマー
+====================*/
 
-                elapsedTime += delta;
-                document.getElementById('stopwatch-text').innerText = elapsedTime.toFixed(2) + 's';
-            }, 30);
+function startTimer(){
 
-            document.getElementById('result-modal').innerText = "調理中！素早くコールを合わせろ！";
+    const start=
+    Date.now();
+
+    timerInterval=
+    setInterval(()=>{
+
+        if(!isPlaying)
+        return;
+
+        elapsedTime=
+        (Date.now()-start)
+        /1000;
+
+        if(gameMode === "timeattack"){
+            const total = (Date.now() - taStartTime) / 1000;
+            document.getElementById("timer-text").innerText = total.toFixed(2) + "s (累計)";
+        } else {
+            document.getElementById("timer-text").innerText = elapsedTime.toFixed(2) + "s";
         }
 
-        function startTAMeasurement() {
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                let totalSec = (Date.now() - taStartTime) / 1000;
-                document.getElementById('stopwatch-text').innerText = totalSec.toFixed(2) + 's';
-                updateStatsUI();
-            }, 30);
+    },30);
+}
+
+/*====================
+ボタン操作
+====================*/
+
+function addIngredient(type){
+
+    if(!isPlaying) return;
+
+    if(type==="ninniku"){
+
+        player.ninniku=
+        (player.ninniku+1)%4;
+    }
+
+    else if(type==="yasai"){
+
+        const cycle=[2,0,1,3,4];
+
+        let i=
+        cycle.indexOf(player.yasai);
+
+        i=(i+1)%cycle.length;
+
+        player.yasai=
+        cycle[i];
+    }
+
+    else if(type==="abura"){
+
+        player.abura=
+        (player.abura+1)%4;
+    }
+
+    else if(type==="karame"){
+
+        player.karame=
+        (player.karame+1)%3;
+    }
+
+    updateDisplay();
+}
+
+/*====================
+表示更新
+====================*/
+
+function updateDisplay(){
+
+    document.getElementById(
+    "val-ninniku"
+    ).innerText=
+    NINNIKU_STAGES[
+    player.ninniku
+    ];
+
+    document.getElementById(
+    "val-yasai"
+    ).innerText=
+    YASAI_STAGES[
+    player.yasai
+    ];
+
+    document.getElementById(
+    "val-abura"
+    ).innerText=
+    ABURA_STAGES[
+    player.abura
+    ];
+
+    document.getElementById(
+    "val-karame"
+    ).innerText=
+    KARAME_STAGES[
+    player.karame
+    ];
+
+    /* ヤサイ */
+
+    const yasai=
+    document.getElementById(
+    "topping-yasai"
+    );
+
+    const yasaiSize=[
+        0,
+        40,
+        60,
+        80,
+        100
+    ];
+
+    let ys=
+    yasaiSize[player.yasai];
+
+    yasai.style.width=
+    ys+"px";
+
+    yasai.style.height=
+    ys+"px";
+
+    yasai.style.opacity=
+    player.yasai===0
+    ? "0"
+    : "1";
+
+    /* アブラ */
+
+    const abura=
+    document.getElementById(
+    "topping-abura"
+    );
+
+    const aburaSize=[
+        0,
+        20,
+        35,
+        50
+    ];
+
+    let as=
+    aburaSize[player.abura];
+
+    abura.style.width=
+    as+"px";
+
+    abura.style.height=
+    as+"px";
+
+    abura.style.opacity=
+    player.abura===0
+    ? "0"
+    : "1";
+
+    /* ニンニク */
+
+    const ninniku=
+    document.getElementById(
+    "topping-ninniku"
+    );
+
+    const nsize={
+        1:[15,10],
+        2:[28,18],
+        3:[40,26]
+    };
+
+    if(player.ninniku===0){
+
+        ninniku.style.opacity=
+        "0";
+
+    }else{
+
+        ninniku.style.opacity=
+        "1";
+
+        ninniku.style.width=
+        nsize[
+        player.ninniku
+        ][0]+"px";
+
+        ninniku.style.height=
+        nsize[
+        player.ninniku
+        ][1]+"px";
+    }
+
+    /* カラメ */
+
+    const karame=
+    document.getElementById(
+    "topping-karame"
+    );
+
+    const colors=[
+
+        "rgba(0,0,0,0)",
+
+        "rgba(40,15,0,.45)",
+
+        "rgba(60,10,0,.8)"
+    ];
+
+    karame.style.background=
+    colors[
+    player.karame
+    ];
+}
+
+/*====================
+採点
+====================*/
+
+function submitOrder(){
+
+    if(!isPlaying) return;
+
+    isPlaying=false;
+
+    clearInterval(
+    timerInterval
+    );
+
+    let diff=
+
+    Math.abs(
+    player.ninniku
+    -order.ninniku)
+
+    +
+
+    Math.abs(
+    player.yasai
+    -order.yasai)
+
+    +
+
+    Math.abs(
+    player.abura
+    -order.abura)
+
+    +
+
+    Math.abs(
+    player.karame
+    -order.karame);
+
+    let msg="";
+
+    if(diff===0){
+
+        combo++;
+
+        let point=
+
+        500+
+
+        Math.max(
+            0,
+            Math.floor(
+            (5-elapsedTime)
+            *150
+            )
+        )
+
+        +(combo*100);
+
+        score+=point;
+
+        msg=
+        "🌟パーフェクト！ ("
+        +
+        elapsedTime.toFixed(2)
+        +
+        "秒) +"
+        +
+        point
+        +
+        "pt";
+
+        if(gameMode==="normal"){
+
+            rankingNormal.push(
+            elapsedTime
+            );
+
+            rankingNormal.sort(
+            (a,b)=>a-b
+            );
+
+            rankingNormal=
+            rankingNormal.slice(0,3);
+
+            saveRankings();
         }
 
-        function addIngredient(type) {
-            if (!isPlaying) return;
-            if (type === 'ninniku') {
-                player.ninniku = (player.ninniku + 1) % NINNIKU_STAGES.length;
-            } else if (type === 'yasai') {
-                let currentIndex = YASAI_PLAYER_CYCLE.indexOf(player.yasai);
-                if (currentIndex === -1) {
-                    currentIndex = 0;
-                } else {
-                    currentIndex = (currentIndex + 1) % YASAI_PLAYER_CYCLE.length;
-                }
-                player.yasai = YASAI_PLAYER_CYCLE[currentIndex];
-            } else if (type === 'karame') {
-                player.karame = (player.karame + 1) % KARAME_STAGES.length;
-            }
-            updateDisplay();
-        }
+    }else
+    if(diff<=2){
 
-        function updateDisplay() {
-            document.getElementById('val-ninniku').innerText = NINNIKU_STAGES.find(s => s.level === player.ninniku).name;
-            document.getElementById('val-yasai').innerText = YASAI_STAGES.find(s => s.level === player.yasai).name;
-            document.getElementById('val-karame').innerText = KARAME_STAGES.find(s => s.level === player.karame).name;
+        combo=0;
 
-            const yasaiSizes = [0, 55, 75, 95, 115];
-            const currentSize = yasaiSizes[player.yasai];
-            const yasaiElem = document.getElementById('topping-yasai');
-            
-            if (player.yasai === 0) {
-                yasaiElem.style.width = '0px';
-                yasaiElem.style.height = '0px';
-                yasaiElem.style.opacity = '0';
-            } else {
-                yasaiElem.style.width = currentSize + 'px';
-                yasaiElem.style.height = currentSize + 'px';
-                yasaiElem.style.opacity = '1';
-            }
+        score+=150;
 
-            const ninnikuElem = document.getElementById('topping-ninniku');
-            if (player.ninniku === 0) {
-                ninnikuElem.style.opacity = '0';
-            } else {
-                ninnikuElem.style.opacity = '1';
-                const ninnikuSizes = {
-                    1: { w: '20px', h: '14px' },
-                    2: { w: '34px', h: '24px' },
-                    3: { w: '48px', h: '34px' }
-                };
-                ninnikuElem.style.width = ninnikuSizes[player.ninniku].w;
-                ninnikuElem.style.height = ninnikuSizes[player.ninniku].h;
-            }
+        msg=
+        "👍おしい！ (" + elapsedTime.toFixed(2) + "秒)";
+    }
 
-            const karameElem = document.getElementById('topping-karame');
-            const karameColors = [
-                'rgba(20, 5, 0, 0)',
-                'rgba(40, 15, 2, 0.45)',
-                'rgba(65, 20, 2, 0.8)'
-            ];
-            karameElem.style.background = karameColors[player.karame];
-        }
+    else{
 
-        function submitOrder() {
-            if (!isPlaying) return;
-            isPlaying = false;
+        combo=0;
 
-            let diffNinniku = Math.abs(player.ninniku - order.ninniku);
-            let diffYasai = Math.abs(player.yasai - order.yasai);
-            let diffKarame = Math.abs(player.karame - order.karame);
+        msg=
+        "💥ミス！ (" + elapsedTime.toFixed(2) + "秒)";
+    }
 
-            let totalDiff = diffNinniku + diffYasai + diffKarame;
+    updateStats();
 
-            let resultMsg = "";
-            let earnedScore = 0;
+    document.getElementById(
+    "result-area"
+    ).innerHTML=
 
-            const orderNinnikuName = NINNIKU_STAGES.find(s => s.level === order.ninniku).name;
-            const orderYasaiName = YASAI_STAGES.find(s => s.level === order.yasai).name;
-            const orderKarameName = KARAME_STAGES.find(s => s.level === order.karame).name;
+    "<div>" + msg + "</div>"
 
-            const playerNinnikuName = NINNIKU_STAGES.find(s => s.level === player.ninniku).name;
-            const playerYasaiName = YASAI_STAGES.find(s => s.level === player.yasai).name;
-            const playerKarameName = KARAME_STAGES.find(s => s.level === player.karame).name;
+    +
 
-            if (gameMode === 'normal') {
-                clearInterval(timerInterval); 
-                if (totalDiff === 0) {
-                    combo++;
-                    let speedBonus = Math.max(0, Math.round((5.0 - elapsedTime) * 150));
-                    earnedScore = 500 + speedBonus + (combo * 100);
-                    totalScore += earnedScore;
+    "<div style='margin-top:4px; font-size:0.78rem; opacity:0.9;'>"
 
-                    checkAndAddNormalRanking(elapsedTime);
+    +
 
-                    resultMsg = `🌟 パーフェクト！（${elapsedTime.toFixed(2)}秒） (+${earnedScore}pt)`;
-                } else if (totalDiff <= 2) {
-                    combo = 0;
-                    earnedScore = 150;
-                    totalScore += earnedScore;
-                    resultMsg = `👍 まあまあ。（${elapsedTime.toFixed(2)}秒）注文違い (+${earnedScore}pt)`;
-                } else {
-                    combo = 0;
-                    resultMsg = `💥 ミス！（${elapsedTime.toFixed(2)}秒） (0pt)`;
-                }
-                updateStatsUI();
+    "[正解]"
+    +
 
-                document.getElementById('result-modal').innerHTML = `
-                    <strong>${resultMsg}</strong><br>
-                    <span style="font-size: 0.75rem; color: #b0bec5; display: block; margin-top: 2px;">
-                    [正解] ニンニク:${orderNinnikuName} / ヤサイ:${orderYasaiName} / カラメ:${orderKarameName}
-                    </span>
-                    <div style="margin-top: 6px; display: flex; gap: 6px; justify-content: center;">
-                        <button onclick="initCustomer()" style="padding: 4px 12px; font-size: 0.85rem; font-weight: bold; background: #ffb74d; border: none; border-radius: 4px; cursor: pointer; color: #000;">次の客へ</button>
-                        <button onclick="returnToTitle()" style="padding: 4px 12px; font-size: 0.85rem; font-weight: bold; background: #546e7a; color: #fff; border: none; border-radius: 4px; cursor: pointer;">タイトルへ戻る</button>
-                    </div>
-                `;
+    " ニンニク:"
+    +
+    NINNIKU_STAGES[
+    order.ninniku
+    ]
 
-            } else {
-                isWaitingNext = true;
+    +
 
-                if (totalDiff === 0) {
-                    resultMsg = `✨ ${taCurrentCustomer}人目クリア！`;
-                    
-                    if (taCurrentCustomer < 5) {
-                        taCurrentCustomer++;
-                        updateStatsUI();
-                        document.getElementById('result-modal').innerHTML = `
-                            <strong>${resultMsg}</strong><br>
-                            <span style="font-size: 0.75rem; color: #ffb74d;">⏱ タイマー稼働中！</span><br>
-                            <div style="margin-top: 4px; display: flex; gap: 6px; justify-content: center;">
-                                <button onclick="proceedNextCustomer()" style="padding: 4px 12px; font-size: 0.85rem; font-weight: bold; background: #e91e63; color:#fff; border: none; border-radius: 4px; cursor: pointer;">次のお客様へ！（即スタート）</button>
-                                <button onclick="returnToTitle()" style="padding: 4px 12px; font-size: 0.85rem; font-weight: bold; background: #546e7a; color: #fff; border: none; border-radius: 4px; cursor: pointer;">タイトルへ戻る</button>
-                            </div>
-                        `;
-                    } else {
-                        clearInterval(timerInterval);
-                        let finalTotalTime = (Date.now() - taStartTime) / 1000;
-                        document.getElementById('stopwatch-text').innerText = finalTotalTime.toFixed(2) + 's';
+    " / ヤサイ:"
+    +
+    YASAI_STAGES[
+    order.yasai
+    ]
 
-                        checkAndAddTARanking(finalTotalTime);
-                        updateStatsUI();
+    +
 
-                        document.getElementById('final-time-display').innerText = finalTotalTime.toFixed(2) + 's';
-                        document.getElementById('result-screen').style.display = 'flex';
-                    }
-                } else {
-                    taStartTime -= 3000; // ミス時はペナルティ+3秒
-                    resultMsg = `💥 ミス！（+3.0秒ペナルティ）`;
+    " / アブラ:"
+    +
+    ABURA_STAGES[
+    order.abura
+    ]
 
-                    if (taCurrentCustomer < 5) {
-                        taCurrentCustomer++;
-                        updateStatsUI();
-                        document.getElementById('result-modal').innerHTML = `
-                            <strong style="color:#ff8a80;">${resultMsg}</strong><br>
-                            <span style="font-size: 0.75rem; color: #b0bec5;">[正解] ニンニク:${orderNinnikuName} / ヤサイ:${orderYasaiName} / カラメ:${orderKarameName}</span><br>
-                            <div style="margin-top: 4px; display: flex; gap: 6px; justify-content: center;">
-                                <button onclick="proceedNextCustomer()" style="padding: 4px 12px; font-size: 0.85rem; font-weight: bold; background: #e91e63; color:#fff; border: none; border-radius: 4px; cursor: pointer;">次のお客様へ！（即スタート）</button>
-                                <button onclick="returnToTitle()" style="padding: 4px 12px; font-size: 0.85rem; font-weight: bold; background: #546e7a; color: #fff; border: none; border-radius: 4px; cursor: pointer;">タイトルへ戻る</button>
-                            </div>
-                        `;
-                    } else {
-                        clearInterval(timerInterval);
-                        let finalTotalTime = (Date.now() - taStartTime) / 1000;
-                        document.getElementById('stopwatch-text').innerText = finalTotalTime.toFixed(2) + 's';
-                        updateStatsUI();
+    +
 
-                        document.getElementById('final-time-display').innerText = finalTotalTime.toFixed(2) + 's';
-                        document.getElementById('result-message-sub').innerText = "5人完走（ミスあり）！タイムが記録されました。";
-                        document.getElementById('result-screen').style.display = 'flex';
-                    }
-                }
-            }
-        }
+    " / カラメ:"
+    +
+    KARAME_STAGES[
+    order.karame
+    ] + "</div>";
 
-        function proceedNextCustomer() {
-            initTACustomerInstant();
-        }
+    if(gameMode==="normal"){
 
-        function updateStatsUI() {
-            if (gameMode === 'normal') {
-                document.getElementById('stat-left').innerText = `スコア: ${totalScore} pt`;
-                document.getElementById('stat-right').innerText = `コンボ: ${combo}`;
-            } else {
-                let currentSec = taStartTime ? ((Date.now() - taStartTime) / 1000).toFixed(2) : "0.00";
-                document.getElementById('stat-left').innerText = `5人抜き: ${taCurrentCustomer}/5人`;
-                document.getElementById('stat-right').innerText = `経過: ${currentSec}s`;
-            }
-        }
+        setTimeout(
 
-        function returnToTitle() {
-            isWaitingNext = false;
-            isPlaying = false;
-            if (timerInterval) clearInterval(timerInterval);
-            document.getElementById('result-screen').style.display = 'none';
-            document.getElementById('title-screen').style.display = 'flex';
-            document.getElementById('result-modal').innerText = "ゲームモードを選んで挑戦しよう！";
-        }
+        ()=>{
 
-        window.onload = () => {
-            loadRankings();
-        };
-    </script>
+            initCustomer();
+
+        },
+
+        2000
+        );
+
+        return;
+    }
+
+    processTimeAttack(
+    diff===0
+    );
+}
+
+/*====================
+タイムアタック
+====================*/
+
+function processTimeAttack(success){
+
+    if(taCustomer<5){
+
+        taCustomer++;
+
+        updateStats();
+
+        setTimeout(()=>{
+
+            initCustomer();
+
+        },1200);
+
+        return;
+    }
+
+    const finalTime=
+
+    (Date.now()
+    -taStartTime)
+
+    /1000;
+
+    if(success){
+
+        rankingTA.push(
+        finalTime
+        );
+
+        rankingTA.sort(
+        (a,b)=>a-b
+        );
+
+        rankingTA=
+        rankingTA.slice(0,3);
+
+        saveRankings();
+    }
+
+    document.getElementById(
+    "final-time"
+    ).innerText=
+
+    finalTime.toFixed(2)
+    +"s";
+
+    document.getElementById(
+    "result-screen"
+    ).style.display=
+    "flex";
+}
+
+/*====================
+UI
+====================*/
+
+function updateStats(){
+
+    if(gameMode==="normal"){
+
+        document.getElementById(
+        "stat-left"
+        ).innerText=
+
+        "スコア:"
+        +score;
+
+        document.getElementById(
+        "stat-right"
+        ).innerText=
+
+        "コンボ:"
+        +combo;
+    }
+
+    else{
+
+        document.getElementById(
+        "stat-left"
+        ).innerText=
+
+        "5人抜き:"
+        +
+        taCustomer
+        +
+        "/5";
+
+        document.getElementById(
+        "stat-right"
+        ).innerText=
+
+        "TAモード";
+    }
+
+    renderRanking();
+}
+
+/*====================
+リザルト・タイトル移動
+====================*/
+
+function retryTA(){
+
+    document.getElementById(
+    "result-screen"
+    ).style.display=
+    "none";
+
+    startGame(
+    "timeattack"
+    );
+}
+
+function returnTitle(){
+
+    clearInterval(
+    timerInterval
+    );
+
+    clearInterval(
+    countdownInterval
+    );
+
+    isPlaying=false;
+
+    document.getElementById(
+    "countdown"
+    ).style.display=
+    "none";
+
+    document.getElementById(
+    "result-screen"
+    ).style.display=
+    "none";
+
+    document.getElementById(
+    "title-screen"
+    ).style.display=
+    "flex";
+
+    document.getElementById(
+    "result-area"
+    ).innerHTML="ゲームモードを選んで開始してください";
+}
+
+/*====================
+起動
+====================*/
+
+window.onload=()=>{
+
+    loadRankings();
+
+    player={
+
+        ninniku:0,
+        yasai:2,
+        abura:0,
+        karame:0
+    };
+
+    updateDisplay();
+};
+
+</script>
+
 </body>
 </html>
