@@ -56,12 +56,24 @@ h1{margin:0 0 6px;color:var(--soft);font-size:1.15rem}
 #bar{height:100%;width:0;background:var(--soft)}
 #peek{width:100%;margin-top:6px;padding:8px;border:2px solid #b39ddb;border-radius:8px;background:transparent;color:#d1c4e9;font-weight:bold;font-size:.85rem;cursor:pointer}
 #peek:disabled{opacity:.35;cursor:default}
+#title{overflow-y:auto;justify-content:safe center}
+#rec{position:fixed;inset:0;background:rgba(20,20,20,.98);z-index:150;display:none;overflow-y:auto;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px))}
+.rbox{max-width:440px;margin:0 auto;text-align:center}
+.sec{background:var(--panel);border-radius:8px;padding:8px 10px;margin:8px 0;text-align:left;font-size:.85rem;line-height:1.6}
+.sec h3{margin:0 0 4px;color:var(--soft);font-size:.95rem}
+.ach{display:flex;gap:8px;align-items:center;padding:6px;border-radius:6px;margin-bottom:4px;background:var(--deep);opacity:.55}
+.ach.on{opacity:1;outline:2px solid var(--soft)}
+.ach .ic{font-size:1.4rem;width:1.8em;text-align:center;flex:none}
+.ach small{display:block;opacity:.8;line-height:1.3}
+#toast{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:var(--soft);color:#1b1100;font-weight:bold;padding:8px 14px;border-radius:20px;z-index:300;opacity:0;pointer-events:none;transition:opacity .25s;font-size:.85rem;max-width:92vw;text-align:center}
+#toast.show{opacity:1}
 </style>
 </head>
 <body>
 
 <div id="title">
 <h2>🍜 二郎系スピードアタック Ver1.2</h2>
+<div id="my-title" style="color:var(--soft);font-weight:bold;margin-bottom:6px"></div>
 <p>ニンニク！ヤサイ！アブラ！カラメ！<br>注文どおりに最速で仕上げろ！<br><small>5人抜き：ミスは作り直し＋3秒ロス</small></p>
 <button class="big n" onclick="start('normal')">通常モード</button>
 <button class="big t" onclick="start('ta')">5人抜きタイムアタック</button>
@@ -71,16 +83,24 @@ h1{margin:0 0 6px;color:var(--soft);font-size:1.15rem}
 <button class="big m" style="width:84px;padding:10px 2px" onclick="start('mem','mid')">ふつう<br><small>2秒</small></button>
 <button class="big m" style="width:84px;padding:10px 2px" onclick="start('mem','hard')">瞬間<br><small>1秒</small></button>
 </div>
+<button class="big g" style="margin-top:10px" onclick="openRec()">🏅 実績・記録</button>
 </div>
 
 <div id="result">
 <h2>🎉 完走！</h2>
 <div id="final-time" style="font-size:2.2rem;color:var(--soft)">0.00s</div>
 <p id="final-detail" style="margin:6px 0"></p>
-<p id="final-rec" style="margin:0 0 10px;color:var(--soft);font-weight:bold"></p>
+<p id="final-rec" style="margin:0 0 6px;color:var(--soft);font-weight:bold"></p>
+<div id="final-ach" style="margin-bottom:8px;color:var(--soft);font-weight:bold"></div>
 <button class="big t" onclick="retry()">もう一度挑戦</button>
+<button class="big g" onclick="openRec()">🏅 実績・記録</button>
 <button class="big g" onclick="toTitle()">タイトルへ</button>
 </div>
+
+<div id="rec"><div class="rbox"><h2>🏅 実績・記録</h2><div id="rec-body"></div>
+<button class="big t" onclick="closeRec()">閉じる</button>
+<button class="big g" id="reset" onclick="resetAll()">記録をリセット</button></div></div>
+<div id="toast"></div>
 
 <h1>🍜 二郎系スピードアタック</h1>
 <div class="w" id="stats"><span id="st-l"></span><span id="st-r"></span></div>
@@ -105,6 +125,24 @@ const LB={ninniku:"ニンニク",yasai:"ヤサイ",abura:"アブラ",karame:"カ
 const DEF={ninniku:0,yasai:2,abura:0,karame:0};
 const KEYS=Object.keys(LB), PEN=3, TOTAL=5;
 const SK={normal:"jiro_v11_normal",ta:"jiro_v12_ta",mem_easy:"jiro_v12_mem_easy",mem_mid:"jiro_v12_mem_mid",mem_hard:"jiro_v12_mem_hard"};
+const STK="jiro_v12_stats";
+const blank=()=>({plays:{normal:0,ta:0,mem:0},perfect:0,maxCombo:0,misses:0,peeks:0,clears:{ta:0,mem_easy:0,mem_mid:0,mem_hard:0},ach:{}});
+let stt=blank();
+const isClear=(c,m)=>c.type==="clear"&&c.mode===m;
+const ACH=[
+{id:"first",icon:"🍜",name:"初提供",desc:"通常モードでパーフェクトを1杯出す",t:s=>s.perfect>=1},
+{id:"combo5",icon:"🔥",name:"売れっ子店員",desc:"通常モードでコンボ5を出す",t:s=>s.maxCombo>=5},
+{id:"fast",icon:"⚡",name:"早業",desc:"1杯を2秒以内でパーフェクト",t:(s,c)=>c.type==="perfect"&&c.el<2},
+{id:"ta1",icon:"🏁",name:"5人抜き達成",desc:"5人抜きを完走する",t:s=>s.clears.ta>=1},
+{id:"mem1",icon:"🧠",name:"暗記見習い",desc:"暗記モードを完走する",t:s=>s.clears.mem_easy+s.clears.mem_mid+s.clears.mem_hard>=1},
+{id:"clean",icon:"🎯",name:"一発入魂",desc:"ノーミスで5人抜き（暗記含む）を完走",t:(s,c)=>c.type==="clear"&&c.misses===0},
+{id:"p50",icon:"🥢",name:"ベテラン店員",desc:"通算パーフェクト50杯",t:s=>s.perfect>=50},
+{id:"combo10",icon:"👑",name:"ロット支配者",desc:"通常モードでコンボ10を出す",t:s=>s.maxCombo>=10},
+{id:"ta30",icon:"🚀",name:"神速のコール捌き",desc:"5人抜きを30秒以内（ペナルティ込み）で完走",t:(s,c)=>isClear(c,"ta")&&c.total<30},
+{id:"master",icon:"🥇",name:"暗記の達人",desc:"瞬間(1秒)で暗記5人抜きをクリア",t:s=>s.clears.mem_hard>=1},
+{id:"memall",icon:"📚",name:"暗記コンプリート",desc:"暗記を3つの難易度すべてクリア",t:s=>s.clears.mem_easy>0&&s.clears.mem_mid>0&&s.clears.mem_hard>0},
+{id:"oni",icon:"👹",name:"暗記の鬼",desc:"瞬間(1秒)をノーミス・見直しゼロでクリア",t:(s,c)=>isClear(c,"mem")&&c.level==="hard"&&c.misses===0&&c.peeks===0}
+];
 const SHOW={easy:3,mid:2,hard:1},LVN={easy:"じっくり",mid:"ふつう",hard:"瞬間"};
 let mode="normal",score=0,combo=0,cust=1,penalty=0,misses=0,tStart=0,t0=0,phase="idle",order={},player={},tick=null,tm=[],rk={normal:[],ta:[],mem_easy:[],mem_mid:[],mem_hard:[]},level="mid",peeks=0,showTok=0,callTxt="";
 const rkey=()=>mode==="mem"?"mem_"+level:mode;
@@ -120,6 +158,38 @@ function renderRank(){
   const r=rk[rkey()];
   $("rank-title").textContent=mode==="ta"?"🏆 5人抜きベスト3（ペナルティ込み）":mode==="mem"?"🧠 暗記・"+LVN[level]+"("+SHOW[level]+"秒) ベスト3":"🏆 ベスト3（1杯）";
   $("rank-list").innerHTML=[0,1,2].map(i=>"<li>"+(i+1)+"位："+(r[i]!==undefined?r[i].toFixed(2)+"s":"----")+"</li>").join("");
+}
+
+/* ---- 実績・称号 ---- */
+function loadS(){try{const o=JSON.parse(localStorage.getItem(STK)||"null");if(o)stt=Object.assign(blank(),o)}catch(e){}}
+function saveS(){try{localStorage.setItem(STK,JSON.stringify(stt))}catch(e){}}
+function curTitle(){const u=ACH.filter(a=>stt.ach[a.id]);return u.length?u[u.length-1].icon+" "+u[u.length-1].name:"🍜 見習い店員"}
+function updTitle(){$("my-title").textContent="称号："+curTitle()}
+let toastT;
+function toast(list){const t=$("toast");t.textContent="🏅 称号獲得："+list.map(a=>a.icon+a.name).join("／");t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),3200)}
+function check(ctx){
+  const got=[];
+  ACH.forEach(a=>{if(!stt.ach[a.id]&&a.t(stt,ctx||{})){stt.ach[a.id]=Date.now();got.push(a)}});
+  if(got.length){saveS();toast(got);updTitle()}
+  return got;
+}
+let resetArm=false;
+function openRec(){
+  const row=(n,k)=>"<div>"+n+"："+[0,1,2].map(i=>rk[k][i]!==undefined?rk[k][i].toFixed(2)+"s":"----").join(" / ")+"</div>";
+  const done=ACH.filter(a=>stt.ach[a.id]).length;
+  const pl=stt.plays;
+  $("rec-body").innerHTML=
+   '<div class="sec"><h3>あなたの称号</h3><div style="font-size:1.15rem;font-weight:bold">'+curTitle()+"</div></div>"
+  +'<div class="sec"><h3>ベスト3</h3>'+row("通常（1杯）","normal")+row("5人抜き","ta")+row("🧠 じっくり3秒","mem_easy")+row("🧠 ふつう2秒","mem_mid")+row("🧠 瞬間1秒","mem_hard")+"</div>"
+  +'<div class="sec"><h3>通算</h3><div>プレイ：通常 '+pl.normal+'回 / 5人抜き '+pl.ta+'回 / 暗記 '+pl.mem+'回</div><div>パーフェクト：'+stt.perfect+'杯　最大コンボ：'+stt.maxCombo+'</div><div>5人抜きのミス：'+stt.misses+'回　暗記の見直し：'+stt.peeks+'回</div></div>'
+  +'<div class="sec"><h3>称号 '+done+"/"+ACH.length+"</h3>"+ACH.map(a=>{const d=stt.ach[a.id];return '<div class="ach'+(d?" on":"")+'"><span class="ic">'+(d?a.icon:"🔒")+'</span><div><b>'+a.name+"</b><small>"+a.desc+(d?"　✔ "+new Date(d).toLocaleDateString("ja-JP"):"")+"</small></div></div>"}).join("")+"</div>";
+  resetArm=false;$("reset").textContent="記録をリセット";
+  $("rec").style.display="block";$("rec").scrollTop=0;
+}
+function closeRec(){$("rec").style.display="none"}
+function resetAll(){
+  if(!resetArm){resetArm=true;$("reset").textContent="本当に消す？もう一度押す";setTimeout(()=>{resetArm=false;$("reset").textContent="記録をリセット"},3000);return}
+  for(const k in rk)rk[k]=[];stt=blank();save();saveS();updTitle();renderRank();openRec();
 }
 
 /* ---- 入力UI：段階を直接タップ ---- */
@@ -159,7 +229,7 @@ function restart(id,cls){const el=$(id);el.classList.remove(cls);void el.offsetW
 
 /* ---- 進行 ---- */
 function start(m,lv){
-  clearAll();mode=m;if(lv)level=lv;peeks=0;showTok=0;$("memui").style.display=m==="mem"?"block":"none";$("peek").disabled=true;$("bar").style.width="0";score=0;combo=0;cust=1;penalty=0;misses=0;phase="cd";
+  clearAll();mode=m;if(lv)level=lv;stt.plays[m]++;saveS();peeks=0;showTok=0;$("memui").style.display=m==="mem"?"block":"none";$("peek").disabled=true;$("bar").style.width="0";score=0;combo=0;cust=1;penalty=0;misses=0;phase="cd";
   $("title").style.display="none";$("result").style.display="none";
   player={...DEF};render();updStats();renderRank();
   $("order-head").textContent=m!=="normal"?"＼ 1人目 ／":"＼ 今日の注文 ／";
@@ -199,7 +269,7 @@ function showCall(sec){
 }
 function peek(){
   if(mode!=="mem"||phase!=="play"||$("peek").disabled)return;
-  peeks++;penalty+=1;updStats();
+  peeks++;stt.peeks++;saveS();penalty+=1;updStats();
   $("pen").textContent="+1.00s";restart("pen","go");showCall(1.5);
 }
 function retry(){start(mode,level)}
@@ -213,7 +283,7 @@ function serve(){
 
   if(mode!=="normal"){
     if(bad.length){
-      misses++;penalty+=PEN;updStats();
+      misses++;stt.misses++;saveS();penalty+=PEN;updStats();
       bad.forEach(k=>$("row-"+k).classList.add("bad"));
       restart("bowl-wrap","shake");
       $("pen").textContent="+"+PEN.toFixed(2)+"s";restart("pen","go");
@@ -231,7 +301,7 @@ function serve(){
     combo++;
     const p=500+Math.max(0,Math.floor((5-el)*150))+combo*100;score+=p;
     h="🌟パーフェクト！("+el.toFixed(2)+"秒) +"+p+"pt";
-    addRank("normal",el);renderRank();
+    addRank("normal",el);renderRank();stt.perfect++;stt.maxCombo=Math.max(stt.maxCombo,combo);saveS();check({type:"perfect",el});
   }else if(diff<=2){combo=0;score+=150;h="👍おしい！("+el.toFixed(2)+"秒)"}
   else{combo=0;h="💥ミス！("+el.toFixed(2)+"秒)"}
   updStats();
@@ -243,6 +313,9 @@ function finish(){
   const total=(performance.now()-tStart)/1000+penalty;
   clearInterval(tick);phase="done";
   const rec=addRank(rkey(),total);renderRank();
+  stt.clears[rkey()]++;saveS();
+  const got=check({type:"clear",mode,level,total,misses,peeks});
+  $("final-ach").innerHTML=got.map(a=>"🏅 称号獲得："+a.icon+a.name).join("<br>");
   $("timer-text").textContent="累計 "+total.toFixed(2)+"s";
   $("final-time").textContent=total.toFixed(2)+"s";
   $("final-detail").textContent="実タイム "+(total-penalty).toFixed(2)+"s ＋ ミス"+misses+"回×"+PEN+"秒"+(mode==="mem"?" ＋ 見直し"+peeks+"回×1秒":"")+" = +"+penalty.toFixed(1)+"s";
@@ -256,7 +329,7 @@ function toTitle(){
   say("ゲームモードを選んで開始してください");
 }
 
-load();player={...DEF};render();renderRank();
+load();loadS();updTitle();player={...DEF};render();renderRank();
 </script>
 </body>
 </html>
