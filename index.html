@@ -2,1522 +2,231 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-
-<title>二郎系スピードアタック Ver1.1</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>二郎系スピードアタック Ver1.2</title>
 <style>
-
-:root{
-    --bg:#263238;
-    --panel:#37474f;
-    --accent:#ff9800;
-}
-
-*{
-    box-sizing:border-box;
-}
-
-body{
-    margin:0;
-    padding:8px;
-    background:var(--bg);
-    color:#fff;
-    font-family:Arial, Helvetica, sans-serif;
-
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    min-height:100vh;
-}
-
-h1{
-    margin:0 0 6px 0;
-    color:#ffb74d;
-    font-size:1.2rem;
-}
-
-/*====================
-タイトル・結果
-====================*/
-
-#title-screen,
-#result-screen{
-
-    position:fixed;
-    inset:0;
-
-    background:rgba(20,20,20,.95);
-
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-
-    z-index:100;
-    text-align:center;
-    padding:20px;
-}
-
-#result-screen{
-    display:none;
-}
-
-.start-btn{
-
-    width:260px;
-
-    margin:5px;
-    padding:12px;
-
-    border:none;
-    border-radius:10px;
-
-    cursor:pointer;
-
-    color:#fff;
-    font-size:1rem;
-    font-weight:bold;
-}
-
-.normal-btn{
-    background:#ff9800;
-}
-
-.ta-btn{
-    background:#e91e63;
-}
-
-.back-btn{
-    background:#607d8b;
-}
-
-/*====================
-ステータス
-====================*/
-
-#game-stats{
-
-    width:100%;
-    max-width:440px;
-
-    display:flex;
-    justify-content:space-between;
-
-    background:var(--panel);
-
-    padding:6px 12px;
-
-    border-radius:6px;
-
-    margin-bottom:6px;
-    font-size:0.9rem;
-}
-
-#timer-box{
-
-    width:100%;
-    max-width:440px;
-
-    background:#1b252b;
-
-    border:2px solid #546e7a;
-
-    border-radius:8px;
-
-    text-align:center;
-
-    padding:6px;
-
-    margin-bottom:6px;
-
-    position:relative;
-}
-
-#timer-text{
-
-    font-size:1.4rem;
-    color:#ffb74d;
-    font-family:monospace;
-}
-
-/*====================
-ランキング
-====================*/
-
-#ranking{
-
-    width:100%;
-    max-width:440px;
-
-    background:var(--panel);
-
-    border-radius:8px;
-
-    padding:6px 8px;
-    margin-bottom:6px;
-    font-size:0.85rem;
-}
-
-#ranking h3{
-    text-align:center;
-    margin:0 0 4px 0;
-    color:#ffb74d;
-    font-size:0.95rem;
-}
-
-#ranking-list{
-    margin:0;
-    padding:0 0 0 20px;
-}
-
-/*====================
-注文
-====================*/
-
-#order-box{
-
-    width:100%;
-    max-width:440px;
-
-    background:var(--panel);
-
-    padding:8px;
-
-    border-radius:8px;
-
-    border:2px solid #ffb74d;
-
-    text-align:center;
-
-    margin-bottom:8px;
-    font-size:0.85rem;
-}
-
-#order-text{
-    font-weight:bold;
-    font-size:0.95rem;
-    margin-top:2px;
-}
-
-/*====================
-丼
-====================*/
-
-#bowl-container{
-
-    width:150px;
-    height:150px;
-
-    position:relative;
-
-    margin-bottom:10px;
-}
-
-.bowl{
-
-    width:150px;
-    height:150px;
-
-    border-radius:50%;
-
-    background:
-    radial-gradient(circle,
-    #cfd8dc 65%,
-    #90a4ae 100%);
-
-    border:4px solid #455a64;
-
-    display:flex;
-    justify-content:center;
-    align-items:center;
-}
-
-.bowl-inner{
-
-    width:125px;
-    height:125px;
-
-    background:#3e2723;
-
-    border-radius:50%;
-
-    position:relative;
-
-    overflow:hidden;
-}
-
-/* カラメ */
-
-#topping-karame{
-
-    position:absolute;
-    inset:0;
-
-    border-radius:50%;
-
-    z-index:1;
-}
-
-/* ヤサイ */
-
-#topping-yasai{
-
-    position:absolute;
-
-    top:50%;
-    left:50%;
-
-    transform:translate(-50%,-50%);
-
-    background:#dcedc8;
-
-    border-radius:50%;
-
-    z-index:2;
-}
-
-/* アブラ */
-
-#topping-abura{
-
-    position:absolute;
-
-    top:55%;
-    left:55%;
-
-    transform:translate(-50%,-50%);
-
-    background:#f5e6a1;
-
-    border-radius:50%;
-
-    z-index:3;
-
-    opacity:0;
-}
-
-/* ニンニク */
-
-#topping-ninniku{
-
-    position:absolute;
-
-    top:14px;
-    left:50%;
-
-    transform:translateX(-50%);
-
-    background:white;
-
-    border-radius:50%;
-
-    z-index:4;
-
-    opacity:0;
-}
-
-/*====================
-ボタン
-====================*/
-
-.controls{
-
-    width:100%;
-    max-width:440px;
-}
-
-.control-row{
-
-    display:flex;
-    gap:6px;
-
-    margin-bottom:6px;
-}
-
-.topping-btn{
-
-    flex:1;
-
-    border:none;
-
-    border-radius:8px;
-
-    background:#ff9800;
-    color:white;
-
-    padding:8px 4px;
-
-    font-weight:bold;
-
-    cursor:pointer;
-    font-size:0.9rem;
-}
-
-.level{
-
-    display:block;
-
-    margin-top:2px;
-
-    font-size:.7rem;
-}
-
-#serve-btn{
-
-    width:100%;
-
-    border:none;
-
-    border-radius:8px;
-
-    padding:10px;
-
-    background:#4caf50;
-
-    color:white;
-
-    font-weight:bold;
-
-    font-size:0.95rem;
-
-    cursor:pointer;
-
-    margin-bottom:6px;
-}
-
-.back-title-btn{
-
-    width:100%;
-
-    border:none;
-
-    border-radius:8px;
-
-    padding:7px;
-
-    background:#607d8b;
-
-    color:white;
-
-    font-weight:bold;
-
-    font-size:0.85rem;
-
-    cursor:pointer;
-}
-
-/*====================
-結果表示（固定高さを設定してガタつき防止）
-====================*/
-
-#result-area{
-
-    width:100%;
-    max-width:440px;
-
-    margin-top:8px;
-
-    background:rgba(0,0,0,.4);
-
-    border-radius:8px;
-
-    padding:8px;
-
-    text-align:center;
-    font-size:0.85rem;
-    line-height:1.3;
-
-    /* スマホで画面が崩れないよう高さを固定 */
-    height:78px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    overflow:hidden;
-}
-
-#countdown{
-
-    position:absolute;
-    inset:0;
-
-    display:none;
-
-    justify-content:center;
-    align-items:center;
-
-    background:rgba(0,0,0,.85);
-
-    color:#ffb74d;
-
-    font-size:2rem;
-    font-weight:bold;
-}
-
+:root{--bg:#263238;--panel:#37474f;--deep:#1b252b;--line:#546e7a;--accent:#ff9800;--soft:#ffb74d;--ok:#4caf50;--bad:#e53935;--text:#fff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{color-scheme:dark;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;padding:8px;background:var(--bg);color:var(--text);font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+h1{margin:0 0 6px;color:var(--soft);font-size:1.15rem}
+.w{width:100%;max-width:440px}
+#title,#result{position:fixed;inset:0;background:rgba(20,20,20,.96);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:100;text-align:center;padding:20px}
+#result{display:none}
+.big{width:260px;margin:5px;padding:13px;border:none;border-radius:10px;color:#fff;font-size:1rem;font-weight:bold;cursor:pointer}
+.n{background:var(--accent)}.t{background:#e91e63}.g{background:#607d8b}
+#stats{display:flex;justify-content:space-between;background:var(--panel);padding:6px 12px;border-radius:6px;margin-bottom:6px;font-size:.9rem}
+#timer{background:var(--deep);border:2px solid var(--line);border-radius:8px;text-align:center;padding:6px;margin-bottom:6px;position:relative}
+#timer-text{font-size:1.5rem;color:var(--soft);font-family:ui-monospace,Menlo,monospace}
+#cd{position:absolute;inset:0;display:none;justify-content:center;align-items:center;background:rgba(0,0,0,.88);color:var(--soft);font-size:2rem;font-weight:bold;border-radius:6px}
+#pen{position:absolute;right:12px;top:4px;color:#ff6e6e;font-weight:bold;opacity:0;pointer-events:none}
+#pen.go{animation:fl .9s ease-out}
+@keyframes fl{0%{opacity:1;transform:translateY(8px) scale(1.3)}100%{opacity:0;transform:translateY(-14px)}}
+#rank{background:var(--panel);border-radius:8px;padding:5px 8px;margin-bottom:6px;font-size:.8rem}
+#rank h3{text-align:center;margin:0 0 3px;color:var(--soft);font-size:.9rem}
+#rank ol{margin:0;padding:0 0 0 18px}
+#order{background:var(--panel);padding:7px;border-radius:8px;border:2px solid var(--soft);text-align:center;margin-bottom:8px;font-size:.85rem}
+#order-head.pop{animation:pop .3s}
+@keyframes pop{0%{transform:scale(1.35);color:var(--soft)}100%{transform:scale(1)}}
+#order-text{font-weight:bold;font-size:1rem;margin-top:2px}
+#bowl-wrap{width:140px;height:140px;margin-bottom:8px}
+#bowl-wrap.shake{animation:sh .45s}
+@keyframes sh{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px) rotate(-4deg)}40%{transform:translateX(10px) rotate(4deg)}60%{transform:translateX(-7px)}80%{transform:translateX(7px)}}
+.bowl{width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,#cfd8dc 65%,#90a4ae 100%);border:4px solid #455a64;display:flex;justify-content:center;align-items:center}
+.inner{width:116px;height:116px;background:#3e2723;border-radius:50%;position:relative;overflow:hidden}
+.inner>div{position:absolute;border-radius:50%;transition:all .12s}
+#b-karame{inset:0;z-index:1}
+#b-yasai{top:50%;left:50%;transform:translate(-50%,-50%);background:#dcedc8;z-index:2}
+#b-abura{top:55%;left:55%;transform:translate(-50%,-50%);background:#f5e6a1;z-index:3}
+#b-ninniku{top:12px;left:50%;transform:translateX(-50%);background:#fff;z-index:4}
+.row{display:flex;align-items:center;gap:6px;margin-bottom:6px;padding:3px;border-radius:8px}
+.row.bad{background:rgba(229,57,53,.28);outline:2px solid var(--bad)}
+.lb{width:4.6em;font-weight:bold;font-size:.85rem;flex:none}
+.seg{display:flex;gap:4px;flex:1}
+.seg button{flex:1;min-height:44px;border:2px solid var(--line);border-radius:8px;background:var(--deep);color:#cfd8dc;font-size:.78rem;font-weight:bold;cursor:pointer;padding:2px}
+.seg button.on{background:var(--accent);border-color:var(--soft);color:#1b1100}
+.row.bad .seg button.on{background:var(--bad);border-color:#ff8a80;color:#fff}
+#serve{width:100%;border:none;border-radius:8px;padding:13px;background:var(--ok);color:#fff;font-weight:bold;font-size:1.05rem;cursor:pointer;margin:2px 0 6px}
+#back{width:100%;border:none;border-radius:8px;padding:7px;background:#607d8b;color:#fff;font-weight:bold;font-size:.85rem;cursor:pointer}
+#msg{margin-top:8px;background:rgba(0,0,0,.4);border-radius:8px;padding:8px;text-align:center;font-size:.85rem;line-height:1.35;height:72px;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden}
 </style>
 </head>
-
 <body>
 
-<div id="title-screen">
-
-<h2>🍜 二郎系スピードアタック Ver1.1</h2>
-
-<p>
-ニンニク！ヤサイ！アブラ！カラメ！
-<br>
-注文を正確かつ最速で再現せよ！
-</p>
-
-<button class="start-btn normal-btn"
-onclick="startGame('normal')">
-通常モード
-</button>
-
-<button class="start-btn ta-btn"
-onclick="startGame('timeattack')">
-5人抜きタイムアタック
-</button>
-
+<div id="title">
+<h2>🍜 二郎系スピードアタック Ver1.2</h2>
+<p>ニンニク！ヤサイ！アブラ！カラメ！<br>注文どおりに最速で仕上げろ！<br><small>5人抜き：ミスは作り直し＋3秒ロス</small></p>
+<button class="big n" onclick="start('normal')">通常モード</button>
+<button class="big t" onclick="start('ta')">5人抜きタイムアタック</button>
 </div>
 
-<div id="result-screen">
-
+<div id="result">
 <h2>🎉 完走！</h2>
-
-<div id="final-time"
-style="font-size:2rem;color:#ffb74d;">
-0.00s
+<div id="final-time" style="font-size:2.2rem;color:var(--soft)">0.00s</div>
+<p id="final-detail" style="margin:6px 0"></p>
+<p id="final-rec" style="margin:0 0 10px;color:var(--soft);font-weight:bold"></p>
+<button class="big t" onclick="start('ta')">もう一度挑戦</button>
+<button class="big g" onclick="toTitle()">タイトルへ</button>
 </div>
 
-<button class="start-btn ta-btn"
-onclick="retryTA()">
-もう一度挑戦
-</button>
+<h1>🍜 二郎系スピードアタック</h1>
+<div class="w" id="stats"><span id="st-l"></span><span id="st-r"></span></div>
+<div class="w" id="timer"><div id="timer-text">0.00s</div><div id="pen"></div><div id="cd">3</div></div>
+<div class="w" id="rank"><h3 id="rank-title"></h3><ol id="rank-list"></ol></div>
+<div class="w" id="order"><div id="order-head">＼ 今日の注文 ／</div><div id="order-text">???</div></div>
 
-<button class="start-btn back-btn"
-onclick="returnTitle()">
-タイトルへ
-</button>
+<div id="bowl-wrap"><div class="bowl"><div class="inner">
+<div id="b-karame"></div><div id="b-yasai"></div><div id="b-abura"></div><div id="b-ninniku"></div>
+</div></div></div>
 
-</div>
-
-<h1>🍜 二郎系スピードアタック Ver1.1</h1>
-
-<div id="game-stats">
-
-<span id="stat-left">
-スコア:0
-</span>
-
-<span id="stat-right">
-コンボ:0
-</span>
-
-</div>
-
-<div id="timer-box">
-
-<div id="timer-text">
-0.00s
-</div>
-
-<div id="countdown">
-3
-</div>
-
-</div>
-
-<div id="ranking">
-
-<h3 id="ranking-title">
-🏆ベスト3
-</h3>
-
-<ul id="ranking-list"></ul>
-
-</div>
-
-<div id="order-box">
-
-<div>＼ 今日の注文 ／</div>
-
-<div id="order-text">
-???
-</div>
-
-</div>
-
-<div id="bowl-container">
-
-<div class="bowl">
-
-<div class="bowl-inner">
-
-<div id="topping-karame"></div>
-
-<div id="topping-yasai"></div>
-
-<div id="topping-abura"></div>
-
-<div id="topping-ninniku"></div>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="controls">
-
-    <div class="control-row">
-
-        <button class="topping-btn"
-        onclick="addIngredient('ninniku')">
-            ニンニク
-            <span class="level"
-            id="val-ninniku">なし</span>
-        </button>
-
-        <button class="topping-btn"
-        onclick="addIngredient('yasai')">
-            ヤサイ
-            <span class="level"
-            id="val-yasai">そのまま</span>
-        </button>
-
-    </div>
-
-    <div class="control-row">
-
-        <button class="topping-btn"
-        onclick="addIngredient('abura')">
-            アブラ
-            <span class="level"
-            id="val-abura">なし</span>
-        </button>
-
-        <button class="topping-btn"
-        onclick="addIngredient('karame')">
-            カラメ
-            <span class="level"
-            id="val-karame">なし</span>
-        </button>
-
-    </div>
-
-    <button id="serve-btn"
-    onclick="submitOrder()">
-        ラーメン提供！
-    </button>
-
-    <button class="back-title-btn"
-    onclick="returnTitle()">
-        🏠 タイトルへ戻る
-    </button>
-
-</div>
-
-<div id="result-area">
-    ゲームモードを選んで開始してください
-</div>
+<div class="w" id="controls"></div>
+<div class="w"><button id="serve" onclick="serve()">ラーメン提供！（Enter）</button>
+<button id="back" onclick="toTitle()">🏠 タイトルへ戻る</button></div>
+<div class="w" id="msg">ゲームモードを選んで開始してください</div>
 
 <script>
+const $=id=>document.getElementById(id);
+const ST={ninniku:["なし","少なめ","マシ","マシマシ"],yasai:["抜き","少なめ","そのまま","マシ","マシマシ"],abura:["なし","少し","マシ","マシマシ"],karame:["なし","カラメ","カラカラ"]};
+const LB={ninniku:"ニンニク",yasai:"ヤサイ",abura:"アブラ",karame:"カラメ"};
+const DEF={ninniku:0,yasai:2,abura:0,karame:0};
+const KEYS=Object.keys(LB), PEN=3, TOTAL=5;
+const SK={normal:"jiro_v11_normal",ta:"jiro_v12_ta"};
+let mode="normal",score=0,combo=0,cust=1,penalty=0,misses=0,tStart=0,t0=0,phase="idle",order={},player={},tick=null,tm=[],rk={normal:[],ta:[]};
 
-/*====================
-定数
-====================*/
+const later=(f,ms)=>{tm.push(setTimeout(f,ms))};
+function clearAll(){tm.forEach(clearTimeout);tm=[];clearInterval(tick)}
 
-const NINNIKU_STAGES = [
-    "なし",
-    "少なめ",
-    "マシ",
-    "マシマシ"
-];
-
-const YASAI_STAGES = [
-    "抜き",
-    "少なめ",
-    "そのまま",
-    "マシ",
-    "マシマシ"
-];
-
-const ABURA_STAGES = [
-    "なし",
-    "少し",
-    "マシ",
-    "マシマシ"
-];
-
-const KARAME_STAGES = [
-    "なし",
-    "カラメ",
-    "カラカラ"
-];
-
-/*====================
-変数
-====================*/
-
-let gameMode="normal";
-
-let score=0;
-let combo=0;
-
-let elapsedTime=0;
-
-let timerInterval=null;
-let countdownInterval=null;
-
-let taCustomer=1;
-let taStartTime=0;
-
-let isPlaying=false;
-
-let order={};
-let player={};
-
-let rankingNormal=[];
-let rankingTA=[];
-
-/*====================
-ランキング
-====================*/
-
-function loadRankings(){
-
-    rankingNormal=
-    JSON.parse(
-        localStorage.getItem(
-            "jiro_v11_normal"
-        )||"[]"
-    );
-
-    rankingTA=
-    JSON.parse(
-        localStorage.getItem(
-            "jiro_v11_ta"
-        )||"[]"
-    );
-
-    renderRanking();
+/* ---- ランキング ---- */
+function load(){for(const k in SK){try{rk[k]=JSON.parse(localStorage.getItem(SK[k])||"[]")}catch(e){rk[k]=[]}}}
+function save(){try{for(const k in SK)localStorage.setItem(SK[k],JSON.stringify(rk[k]))}catch(e){}}
+function addRank(m,t){rk[m].push(t);rk[m].sort((a,b)=>a-b);const i=rk[m].indexOf(t);rk[m]=rk[m].slice(0,3);save();return i<3}
+function renderRank(){
+  $("rank-title").textContent=mode==="ta"?"🏆 5人抜きベスト3（ペナルティ込み）":"🏆 ベスト3（1杯）";
+  $("rank-list").innerHTML=[0,1,2].map(i=>"<li>"+(i+1)+"位：" +(rk[mode][i]!==undefined?rk[mode][i].toFixed(2)+"s":"----")+"</li>").join("");
 }
 
-function saveRankings(){
+/* ---- 入力UI：段階を直接タップ ---- */
+KEYS.forEach(k=>{
+  const r=document.createElement("div");r.className="row";r.id="row-"+k;
+  r.innerHTML='<span class="lb">'+LB[k]+'</span><div class="seg">'+ST[k].map((s,i)=>'<button data-k="'+k+'" data-i="'+i+'">'+s+'</button>').join("")+"</div>";
+  $("controls").appendChild(r);
+});
+$("controls").addEventListener("pointerdown",e=>{
+  const b=e.target.closest("button[data-k]");
+  if(!b||phase!=="play")return;
+  player[b.dataset.k]=+b.dataset.i;render();
+});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();serve()}});
 
-    localStorage.setItem(
-        "jiro_v11_normal",
-        JSON.stringify(rankingNormal)
-    );
+/* ---- 描画 ---- */
+function render(){
+  KEYS.forEach(k=>document.querySelectorAll("#row-"+k+" button").forEach((b,i)=>b.classList.toggle("on",i===player[k])));
+  const ys=[0,40,60,80,100][player.yasai],as=[0,20,34,48][player.abura],ns=[[0,0],[15,10],[28,18],[40,26]][player.ninniku];
+  const y=$("b-yasai").style,a=$("b-abura").style,n=$("b-ninniku").style;
+  y.width=y.height=ys+"px";y.opacity=ys?1:0;
+  a.width=a.height=as+"px";a.opacity=as?1:0;
+  n.width=ns[0]+"px";n.height=ns[1]+"px";n.opacity=ns[0]?1:0;
+  $("b-karame").style.background=["rgba(0,0,0,0)","rgba(40,15,0,.45)","rgba(60,10,0,.8)"][player.karame];
+}
+function updStats(){
+  if(mode==="normal"){$("st-l").textContent="スコア:"+score;$("st-r").textContent="コンボ:"+combo}
+  else{$("st-l").textContent="5人抜き:"+cust+"/"+TOTAL;$("st-r").textContent="ミス:"+misses+"（+"+penalty.toFixed(0)+"s）"}
+}
+function tickFn(){
+  const now=performance.now();
+  if(mode==="ta"){if(phase==="play"||phase==="lock")$("timer-text").textContent="累計 "+((now-tStart)/1000+penalty).toFixed(2)+"s"}
+  else if(phase==="play")$("timer-text").textContent=((now-t0)/1000).toFixed(2)+"s";
+}
+function say(h){$("msg").innerHTML=h}
+function restart(id,cls){const el=$(id);el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls)}
 
-    localStorage.setItem(
-        "jiro_v11_ta",
-        JSON.stringify(rankingTA)
-    );
+/* ---- 進行 ---- */
+function start(m){
+  clearAll();mode=m;score=0;combo=0;cust=1;penalty=0;misses=0;phase="cd";
+  $("title").style.display="none";$("result").style.display="none";
+  player={...DEF};render();updStats();renderRank();
+  $("order-head").textContent=m==="ta"?"＼ 1人目 ／":"＼ 今日の注文 ／";
+  $("order-text").textContent="???";
+  $("timer-text").textContent=m==="ta"?"累計 0.00s":"0.00s";
+  say(m==="ta"?"5人抜きスタート！ミスは作り直し＋"+PEN+"秒":"ゲームスタート！");
+  tick=setInterval(tickFn,30);
+  const cd=$("cd");cd.style.display="flex";let n=3;cd.textContent=n;
+  const step=()=>{
+    n--;
+    if(n>0){cd.textContent=n;later(step,700)}
+    else{cd.textContent="GO!";later(()=>{cd.style.display="none";tStart=performance.now();nextCustomer()},450)}
+  };
+  later(step,700);
+}
+function nextCustomer(){
+  do{order={ninniku:rnd(4),yasai:rnd(5),abura:rnd(4),karame:rnd(3)}}while(KEYS.every(k=>order[k]===DEF[k]));
+  player={...DEF};render();
+  const c=[];
+  if(order.ninniku)c.push("ニンニク"+ST.ninniku[order.ninniku]);
+  if(order.yasai===0)c.push("ヤサイ抜き");else if(order.yasai!==2)c.push("ヤサイ"+ST.yasai[order.yasai]);
+  if(order.abura)c.push("アブラ"+ST.abura[order.abura]);
+  if(order.karame)c.push(ST.karame[order.karame]);
+  $("order-text").textContent=c.join("、");
+  $("order-head").textContent=mode==="ta"?"＼ 次！ "+cust+"人目 ／":"＼ 次！ ／";
+  restart("order-head","pop");
+  t0=performance.now();phase="play";
+}
+const rnd=n=>Math.floor(Math.random()*n);
+
+function serve(){
+  if(phase!=="play")return;
+  const now=performance.now(),el=(now-t0)/1000;
+  const bad=KEYS.filter(k=>player[k]!==order[k]);
+  const diff=KEYS.reduce((s,k)=>s+Math.abs(player[k]-order[k]),0);
+  phase="lock";
+
+  if(mode==="ta"){
+    if(bad.length){
+      misses++;penalty+=PEN;updStats();
+      bad.forEach(k=>$("row-"+k).classList.add("bad"));
+      restart("bowl-wrap","shake");
+      $("pen").textContent="+"+PEN.toFixed(2)+"s";restart("pen","go");
+      say("<div>💥 ちがう！作り直し！ <b>+"+PEN+"秒</b></div><div style='font-size:.78rem;opacity:.9;margin-top:3px'>赤い段が違っています</div>");
+      later(()=>{bad.forEach(k=>$("row-"+k).classList.remove("bad"));player={...DEF};render();phase="play"},800);
+      return;
+    }
+    say("<div>⭕ OK！</div>");
+    if(cust<TOTAL){cust++;updStats();later(nextCustomer,200)}else finish();
+    return;
+  }
+
+  let h;
+  if(diff===0){
+    combo++;
+    const p=500+Math.max(0,Math.floor((5-el)*150))+combo*100;score+=p;
+    h="🌟パーフェクト！("+el.toFixed(2)+"秒) +"+p+"pt";
+    addRank("normal",el);renderRank();
+  }else if(diff<=2){combo=0;score+=150;h="👍おしい！("+el.toFixed(2)+"秒)"}
+  else{combo=0;h="💥ミス！("+el.toFixed(2)+"秒)"}
+  updStats();
+  say("<div>"+h+"</div><div style='margin-top:4px;font-size:.78rem;opacity:.9'>[正解] "+KEYS.map(k=>LB[k]+":"+ST[k][order[k]]).join(" / ")+"</div>");
+  later(nextCustomer,diff===0?500:1100);
 }
 
-function renderRanking(){
-
-    const list=
-    document.getElementById(
-        "ranking-list"
-    );
-
-    list.innerHTML="";
-
-    const ranking=
-    gameMode==="timeattack"
-    ? rankingTA
-    : rankingNormal;
-
-    for(let i=0;i<3;i++){
-
-        const li=
-        document.createElement("li");
-
-        if(ranking[i]!==undefined){
-
-            li.textContent=
-            (i+1)+"位 : "
-            +ranking[i].toFixed(2)
-            +"s";
-
-        }else{
-
-            li.textContent=
-            (i+1)+"位 : ----";
-        }
-
-        list.appendChild(li);
-    }
+function finish(){
+  const total=(performance.now()-tStart)/1000+penalty;
+  clearInterval(tick);phase="done";
+  const rec=addRank("ta",total);renderRank();
+  $("timer-text").textContent="累計 "+total.toFixed(2)+"s";
+  $("final-time").textContent=total.toFixed(2)+"s";
+  $("final-detail").textContent="実タイム "+(total-penalty).toFixed(2)+"s ＋ ミス"+misses+"回 × "+PEN+"秒 = +"+penalty.toFixed(1)+"s";
+  $("final-rec").textContent=rec?"🏆 ベスト3入り！":"";
+  later(()=>{$("result").style.display="flex"},500);
 }
 
-/*====================
-開始
-====================*/
-
-function startGame(mode){
-
-    gameMode=mode;
-
-    document.getElementById(
-        "title-screen"
-    ).style.display="none";
-
-    document.getElementById(
-        "result-screen"
-    ).style.display="none";
-
-    document.getElementById(
-        "result-area"
-    ).innerHTML= (gameMode === "timeattack") ? "5人抜きスタート！" : "ゲームスタート！";
-
-    renderRanking();
-
-    score=0;
-    combo=0;
-
-    taCustomer=1;
-
-    updateStats();
-
-    if(gameMode==="timeattack"){
-
-        taStartTime=Date.now();
-    }
-
-    initCustomer();
+function toTitle(){
+  clearAll();phase="idle";
+  $("cd").style.display="none";$("result").style.display="none";$("title").style.display="flex";
+  say("ゲームモードを選んで開始してください");
 }
 
-/*====================
-客生成
-====================*/
-
-function initCustomer(){
-
-    order={
-
-        ninniku:
-        Math.floor(
-            Math.random()*4
-        ),
-
-        yasai:
-        Math.floor(
-            Math.random()*5
-        ),
-
-        abura:
-        Math.floor(
-            Math.random()*4
-        ),
-
-        karame:
-        Math.floor(
-            Math.random()*3
-        )
-    };
-
-    player={
-
-        ninniku:0,
-        yasai:2,
-        abura:0,
-        karame:0
-    };
-
-    updateDisplay();
-
-    document.getElementById(
-        "order-text"
-    ).innerText="???";
-
-    startCountdown();
-}
-
-/*====================
-コール生成
-====================*/
-
-function revealOrder(){
-
-    let calls=[];
-
-    if(order.ninniku>0){
-
-        calls.push(
-        "ニンニク "
-        +NINNIKU_STAGES[
-            order.ninniku
-        ]);
-    }
-
-    if(order.yasai===0){
-
-        calls.push(
-        "ヤサイ抜き");
-    }
-
-    else if(order.yasai!==2){
-
-        calls.push(
-        "ヤサイ "
-        +YASAI_STAGES[
-            order.yasai
-        ]);
-    }
-
-    if(order.abura>0){
-
-        calls.push(
-        "アブラ "
-        +ABURA_STAGES[
-            order.abura
-        ]);
-    }
-
-    if(order.karame>0){
-
-        calls.push(
-        KARAME_STAGES[
-            order.karame
-        ]);
-    }
-
-    document.getElementById(
-        "order-text"
-    ).innerText=
-
-    calls.length
-    ? calls.join("、")
-    : "（そのまま）";
-}
-
-/*====================
-カウントダウン
-====================*/
-
-function startCountdown(){
-
-    isPlaying=false;
-
-    clearInterval(timerInterval);
-    clearInterval(countdownInterval);
-
-    if(gameMode === "normal"){
-        document.getElementById("timer-text").innerText = "0.00s";
-    } else {
-        const currentTotal = ((Date.now() - taStartTime) / 1000).toFixed(2);
-        document.getElementById("timer-text").innerText = currentTotal + "s (累計)";
-    }
-
-    elapsedTime=0;
-
-    const cd=
-    document.getElementById(
-        "countdown"
-    );
-
-    cd.style.display="flex";
-
-    let count=3;
-
-    cd.innerText=count;
-
-    countdownInterval=
-    setInterval(()=>{
-
-        count--;
-
-        if(count>0){
-
-            cd.innerText=count;
-        }
-
-        else if(count===0){
-
-            cd.innerText="GO!";
-            revealOrder();
-        }
-
-        else{
-
-            clearInterval(countdownInterval);
-
-            cd.style.display="none";
-
-            startTimer();
-
-            isPlaying=true;
-        }
-
-    },800);
-}
-
-/*====================
-タイマー
-====================*/
-
-function startTimer(){
-
-    const start=
-    Date.now();
-
-    timerInterval=
-    setInterval(()=>{
-
-        if(!isPlaying)
-        return;
-
-        elapsedTime=
-        (Date.now()-start)
-        /1000;
-
-        if(gameMode === "timeattack"){
-            const total = (Date.now() - taStartTime) / 1000;
-            document.getElementById("timer-text").innerText = total.toFixed(2) + "s (累計)";
-        } else {
-            document.getElementById("timer-text").innerText = elapsedTime.toFixed(2) + "s";
-        }
-
-    },30);
-}
-
-/*====================
-ボタン操作
-====================*/
-
-function addIngredient(type){
-
-    if(!isPlaying) return;
-
-    if(type==="ninniku"){
-
-        player.ninniku=
-        (player.ninniku+1)%4;
-    }
-
-    else if(type==="yasai"){
-
-        const cycle=[2,0,1,3,4];
-
-        let i=
-        cycle.indexOf(player.yasai);
-
-        i=(i+1)%cycle.length;
-
-        player.yasai=
-        cycle[i];
-    }
-
-    else if(type==="abura"){
-
-        player.abura=
-        (player.abura+1)%4;
-    }
-
-    else if(type==="karame"){
-
-        player.karame=
-        (player.karame+1)%3;
-    }
-
-    updateDisplay();
-}
-
-/*====================
-表示更新
-====================*/
-
-function updateDisplay(){
-
-    document.getElementById(
-    "val-ninniku"
-    ).innerText=
-    NINNIKU_STAGES[
-    player.ninniku
-    ];
-
-    document.getElementById(
-    "val-yasai"
-    ).innerText=
-    YASAI_STAGES[
-    player.yasai
-    ];
-
-    document.getElementById(
-    "val-abura"
-    ).innerText=
-    ABURA_STAGES[
-    player.abura
-    ];
-
-    document.getElementById(
-    "val-karame"
-    ).innerText=
-    KARAME_STAGES[
-    player.karame
-    ];
-
-    /* ヤサイ */
-
-    const yasai=
-    document.getElementById(
-    "topping-yasai"
-    );
-
-    const yasaiSize=[
-        0,
-        40,
-        60,
-        80,
-        100
-    ];
-
-    let ys=
-    yasaiSize[player.yasai];
-
-    yasai.style.width=
-    ys+"px";
-
-    yasai.style.height=
-    ys+"px";
-
-    yasai.style.opacity=
-    player.yasai===0
-    ? "0"
-    : "1";
-
-    /* アブラ */
-
-    const abura=
-    document.getElementById(
-    "topping-abura"
-    );
-
-    const aburaSize=[
-        0,
-        20,
-        35,
-        50
-    ];
-
-    let as=
-    aburaSize[player.abura];
-
-    abura.style.width=
-    as+"px";
-
-    abura.style.height=
-    as+"px";
-
-    abura.style.opacity=
-    player.abura===0
-    ? "0"
-    : "1";
-
-    /* ニンニク */
-
-    const ninniku=
-    document.getElementById(
-    "topping-ninniku"
-    );
-
-    const nsize={
-        1:[15,10],
-        2:[28,18],
-        3:[40,26]
-    };
-
-    if(player.ninniku===0){
-
-        ninniku.style.opacity=
-        "0";
-
-    }else{
-
-        ninniku.style.opacity=
-        "1";
-
-        ninniku.style.width=
-        nsize[
-        player.ninniku
-        ][0]+"px";
-
-        ninniku.style.height=
-        nsize[
-        player.ninniku
-        ][1]+"px";
-    }
-
-    /* カラメ */
-
-    const karame=
-    document.getElementById(
-    "topping-karame"
-    );
-
-    const colors=[
-
-        "rgba(0,0,0,0)",
-
-        "rgba(40,15,0,.45)",
-
-        "rgba(60,10,0,.8)"
-    ];
-
-    karame.style.background=
-    colors[
-    player.karame
-    ];
-}
-
-/*====================
-採点
-====================*/
-
-function submitOrder(){
-
-    if(!isPlaying) return;
-
-    isPlaying=false;
-
-    clearInterval(
-    timerInterval
-    );
-
-    let diff=
-
-    Math.abs(
-    player.ninniku
-    -order.ninniku)
-
-    +
-
-    Math.abs(
-    player.yasai
-    -order.yasai)
-
-    +
-
-    Math.abs(
-    player.abura
-    -order.abura)
-
-    +
-
-    Math.abs(
-    player.karame
-    -order.karame);
-
-    let msg="";
-
-    if(diff===0){
-
-        combo++;
-
-        let point=
-
-        500+
-
-        Math.max(
-            0,
-            Math.floor(
-            (5-elapsedTime)
-            *150
-            )
-        )
-
-        +(combo*100);
-
-        score+=point;
-
-        msg=
-        "🌟パーフェクト！ ("
-        +
-        elapsedTime.toFixed(2)
-        +
-        "秒) +"
-        +
-        point
-        +
-        "pt";
-
-        if(gameMode==="normal"){
-
-            rankingNormal.push(
-            elapsedTime
-            );
-
-            rankingNormal.sort(
-            (a,b)=>a-b
-            );
-
-            rankingNormal=
-            rankingNormal.slice(0,3);
-
-            saveRankings();
-        }
-
-    }else
-    if(diff<=2){
-
-        combo=0;
-
-        score+=150;
-
-        msg=
-        "👍おしい！ (" + elapsedTime.toFixed(2) + "秒)";
-    }
-
-    else{
-
-        combo=0;
-
-        msg=
-        "💥ミス！ (" + elapsedTime.toFixed(2) + "秒)";
-    }
-
-    updateStats();
-
-    document.getElementById(
-    "result-area"
-    ).innerHTML=
-
-    "<div>" + msg + "</div>"
-
-    +
-
-    "<div style='margin-top:4px; font-size:0.78rem; opacity:0.9;'>"
-
-    +
-
-    "[正解]"
-    +
-
-    " ニンニク:"
-    +
-    NINNIKU_STAGES[
-    order.ninniku
-    ]
-
-    +
-
-    " / ヤサイ:"
-    +
-    YASAI_STAGES[
-    order.yasai
-    ]
-
-    +
-
-    " / アブラ:"
-    +
-    ABURA_STAGES[
-    order.abura
-    ]
-
-    +
-
-    " / カラメ:"
-    +
-    KARAME_STAGES[
-    order.karame
-    ] + "</div>";
-
-    if(gameMode==="normal"){
-
-        setTimeout(
-
-        ()=>{
-
-            initCustomer();
-
-        },
-
-        2000
-        );
-
-        return;
-    }
-
-    processTimeAttack(
-    diff===0
-    );
-}
-
-/*====================
-タイムアタック
-====================*/
-
-function processTimeAttack(success){
-
-    if(taCustomer<5){
-
-        taCustomer++;
-
-        updateStats();
-
-        setTimeout(()=>{
-
-            initCustomer();
-
-        },1200);
-
-        return;
-    }
-
-    const finalTime=
-
-    (Date.now()
-    -taStartTime)
-
-    /1000;
-
-    if(success){
-
-        rankingTA.push(
-        finalTime
-        );
-
-        rankingTA.sort(
-        (a,b)=>a-b
-        );
-
-        rankingTA=
-        rankingTA.slice(0,3);
-
-        saveRankings();
-    }
-
-    document.getElementById(
-    "final-time"
-    ).innerText=
-
-    finalTime.toFixed(2)
-    +"s";
-
-    document.getElementById(
-    "result-screen"
-    ).style.display=
-    "flex";
-}
-
-/*====================
-UI
-====================*/
-
-function updateStats(){
-
-    if(gameMode==="normal"){
-
-        document.getElementById(
-        "stat-left"
-        ).innerText=
-
-        "スコア:"
-        +score;
-
-        document.getElementById(
-        "stat-right"
-        ).innerText=
-
-        "コンボ:"
-        +combo;
-    }
-
-    else{
-
-        document.getElementById(
-        "stat-left"
-        ).innerText=
-
-        "5人抜き:"
-        +
-        taCustomer
-        +
-        "/5";
-
-        document.getElementById(
-        "stat-right"
-        ).innerText=
-
-        "TAモード";
-    }
-
-    renderRanking();
-}
-
-/*====================
-リザルト・タイトル移動
-====================*/
-
-function retryTA(){
-
-    document.getElementById(
-    "result-screen"
-    ).style.display=
-    "none";
-
-    startGame(
-    "timeattack"
-    );
-}
-
-function returnTitle(){
-
-    clearInterval(
-    timerInterval
-    );
-
-    clearInterval(
-    countdownInterval
-    );
-
-    isPlaying=false;
-
-    document.getElementById(
-    "countdown"
-    ).style.display=
-    "none";
-
-    document.getElementById(
-    "result-screen"
-    ).style.display=
-    "none";
-
-    document.getElementById(
-    "title-screen"
-    ).style.display=
-    "flex";
-
-    document.getElementById(
-    "result-area"
-    ).innerHTML="ゲームモードを選んで開始してください";
-}
-
-/*====================
-起動
-====================*/
-
-window.onload=()=>{
-
-    loadRankings();
-
-    player={
-
-        ninniku:0,
-        yasai:2,
-        abura:0,
-        karame:0
-    };
-
-    updateDisplay();
-};
-
+load();player={...DEF};render();renderRank();
 </script>
-
 </body>
 </html>
