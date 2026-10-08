@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二郎系ラーメン盛り付けシミュレーション</title>
+    <style>
+        :root {
+            --bg-color: #263238;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+        }
+        h1 {
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+            color: #ffb74d;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        /* 画面上部：注文エリア */
+        #order-container {
+            background: #37474f;
+            border: 3px solid #ffb74d;
+            border-radius: 12px;
+            padding: 15px 25px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            max-width: 480px;
+            width: 100%;
+        }
+        #order-title {
+            font-size: 0.9rem;
+            color: #b0bec5;
+            margin-bottom: 5px;
+        }
+        #order-text {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* 画面中央：丼エリア */
+        #bowl-container {
+            position: relative;
+            width: 280px;
+            height: 220px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        /* 丼の見た目 */
+        .bowl {
+            position: absolute;
+            bottom: 0;
+            width: 260px;
+            height: 120px;
+            background: linear-gradient(to bottom, #cfd8dc, #90a4ae);
+            border-radius: 0 0 130px 130px;
+            border: 4px solid #37474f;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            z-index: 10;
+        }
+        .bowl-inner {
+            width: 220px;
+            height: 90px;
+            background: #3e2723; /* スープの色 */
+            border-radius: 0 0 110px 110px;
+            position: relative;
+        }
+
+        /* 具材の視覚的表現レイヤー */
+        .ingredient-layer {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.2s ease;
+            z-index: 5;
+        }
+
+        /* ヤサイタワー */
+        #topping-yasai {
+            bottom: 60px;
+            width: 120px;
+            background: #dcedc8;
+            border-radius: 60px 60px 10px 10px;
+            box-shadow: inset 0 -5px 10px rgba(0,0,0,0.1);
+            z-index: 5;
+        }
+
+        /* ニンニク（ヤサイの頂上付近に配置する粒々エフェクト） */
+        #topping-ninniku {
+            bottom: 65px;
+            width: 45px;
+            height: 20px;
+            z-index: 7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 3px;
+            transition: all 0.2s ease;
+        }
+        .ninniku-dot {
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+
+        /* カラメ（ヤサイの上からトロッと垂れているタレのライン表現） */
+        #topping-karame {
+            bottom: 60px;
+            width: 90px;
+            height: 40px;
+            z-index: 6;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .karame-drip {
+            position: absolute;
+            background: #3e1405;
+            border-radius: 4px;
+        }
+
+        /* 画面下部：操作ボタンエリア */
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+        .btn-toppings {
+            flex: 1;
+            padding: 12px 5px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #ff9800;
+            color: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: transform 0.1s, background 0.2s;
+            text-align: center;
+        }
+        .btn-toppings:active {
+            transform: scale(0.95);
+            background: #f57c00;
+        }
+        .btn-action {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #4caf50;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: background 0.2s;
+        }
+        .btn-action:hover {
+            background: #43a047;
+        }
+
+        /* 結果表示エリア */
+        #result-modal {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 8px;
+            text-align: center;
+            max-width: 480px;
+            width: 100%;
+            min-height: 50px;
+            box-sizing: border-box;
+        }
+
+        .level-badge {
+            display: block;
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 4px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🍜 二郎系盛り付けシミュレーション</h1>
+
+    <!-- 画面上部：注文エリア -->
+    <div id="order-container">
+        <div id="order-title">＼ 今日の注文（コール） ／</div>
+        <div id="order-text">読み込み中...</div>
+    </div>
+
+    <!-- 画面中央：丼エリア -->
+    <div id="bowl-container">
+        <!-- 具材ビジュアル -->
+        <div id="topping-karame" class="ingredient-layer">
+            <!-- タレの垂れ線構造 -->
+            <div class="karame-drip" style="left: 20px; top: 5px; width: 6px; height: 25px;"></div>
+            <div class="karame-drip" style="left: 45px; top: 2px; width: 8px; height: 32px;"></div>
+            <div class="karame-drip" style="left: 70px; top: 8px; width: 6px; height: 22px;"></div>
+        </div>
+        <div id="topping-yasai" class="ingredient-layer" style="height: 60px;"></div>
+        <!-- ニンニク粒々コンテナ -->
+        <div id="topping-ninniku" class="ingredient-layer"></div>
+        
+        <!-- 丼 -->
+        <div class="bowl">
+            <div class="bowl-inner"></div>
+        </div>
+    </div>
+
+    <!-- 画面下部：操作ボタンエリア -->
+    <div class="controls-section">
+        <div class="button-group">
+            <button class="btn-toppings" onclick="addIngredient('ninniku')">
+                ニンニク
+                <span id="val-ninniku" class="level-badge">少なめ</span>
+            </button>
+            <button class="btn-toppings" onclick="addIngredient('yasai')">
+                ヤサイ
+                <span id="val-yasai" class="level-badge">そのまま</span>
+            </button>
+            <button class="btn-toppings" onclick="addIngredient('karame')">
+                カラメ
+                <span id="val-karame" class="level-badge">なし</span>
+            </button>
+        </div>
+        <button class="btn-action" onclick="submitOrder()">ラーメン提供！</button>
+    </div>
+
+    <!-- 結果・スコア表示 -->
+    <div id="result-modal">
+        ボタンを押してラーメンを作り、提供してください！
+    </div>
+
+    <script>
+        // 1. ニンニク：なし、少なめ、マシ、マシマシ（4段階）
+        const NINNIKU_STAGES = [
+            { level: 0, name: "なし" },
+            { level: 1, name: "少なめ" },
+            { level: 2, name: "マシ" },
+            { level: 3, name: "マシマシ" }
+        ];
+
+        // 2. ヤサイ：抜き、少なめ、そのまま、マシ、マシマシ（5段階）
+        const YASAI_STAGES = [
+            { level: 0, name: "抜き" },
+            { level: 1, name: "少なめ" },
+            { level: 2, name: "そのまま" },
+            { level: 3, name: "マシ" },
+            { level: 4, name: "マシマシ" }
+        ];
+        const YASAI_PLAYER_CYCLE = [2, 0, 1, 3, 4]; 
+
+        // 3. カラメ：なし、カラメ、カラカラ（3段階）
+        const KARAME_STAGES = [
+            { level: 0, name: "なし" },
+            { level: 1, name: "カラメ" },
+            { level: 2, name: "カラカラ" }
+        ];
+
+        // 注文データとプレイヤーの盛り付けデータ
+        let order = { ninniku: 1, yasai: 2, karame: 0 };
+        let player = { ninniku: 1, yasai: 2, karame: 0 };
+
+        // ゲーム初期化
+        function initGame() {
+            order.ninniku = Math.floor(Math.random() * NINNIKU_STAGES.length);
+            order.yasai = Math.floor(Math.random() * YASAI_STAGES.length);
+            order.karame = Math.floor(Math.random() * KARAME_STAGES.length);
+
+            const ninnikuName = NINNIKU_STAGES.find(s => s.level === order.ninniku).name;
+            const yasaiName = YASAI_STAGES.find(s => s.level === order.yasai).name;
+            const karameName = KARAME_STAGES.find(s => s.level === order.karame).name;
+
+            let ninnikuCall = ninnikuName === "なし" ? "ニンニク抜き" : `ニンニク ${ninnikuName}`;
+            
+            let yasaiCall = "";
+            if (yasaiName === "抜き") {
+                yasaiCall = "ヤサイ抜き";
+            } else if (yasaiName === "そのまま") {
+                yasaiCall = ""; 
+            } else {
+                yasaiCall = `ヤサイ ${yasaiName}`;
+            }
+
+            let karameCall = karameName === "なし" ? "" : karameName;
+
+            let calls = [ninnikuCall, yasaiCall, karameCall].filter(c => c !== "");
+            let orderTextStr = calls.length > 0 ? calls.join("、") : "（そのまま）";
+
+            document.getElementById('order-text').innerText = orderTextStr;
+
+            player = { ninniku: 1, yasai: 2, karame: 0 };
+            updateDisplay();
+            document.getElementById('result-modal').innerText = "次の注文が入りました！コールに合わせて盛り付けてください。";
+        }
+
+        // 具材ボタンがクリックされた時の処理
+        function addIngredient(type) {
+            if (type === 'ninniku') {
+                player.ninniku = (player.ninniku + 1) % NINNIKU_STAGES.length;
+            } else if (type === 'yasai') {
+                let currentIndex = YASAI_PLAYER_CYCLE.indexOf(player.yasai);
+                if (currentIndex === -1) {
+                    currentIndex = 0;
+                } else {
+                    currentIndex = (currentIndex + 1) % YASAI_PLAYER_CYCLE.length;
+                }
+                player.yasai = YASAI_PLAYER_CYCLE[currentIndex];
+            } else if (type === 'karame') {
+                player.karame = (player.karame + 1) % KARAME_STAGES.length;
+            }
+            updateDisplay();
+        }
+
+        // 画面のUIとビジュアルを更新
+        function updateDisplay() {
+            document.getElementById('val-ninniku').innerText = NINNIKU_STAGES.find(s => s.level === player.ninniku).name;
+            document.getElementById('val-yasai').innerText = YASAI_STAGES.find(s => s.level === player.yasai).name;
+            document.getElementById('val-karame').innerText = KARAME_STAGES.find(s => s.level === player.karame).name;
+
+            // 1. ヤサイの高さ変更 (抜き:10px, 少なめ:35px, そのまま:60px, マシ:85px, マシマシ:110px)
+            const yasaiHeights = [10, 35, 60, 85, 110];
+            const currentYasaiHeight = yasaiHeights[player.yasai];
+            document.getElementById('topping-yasai').style.height = currentYasaiHeight + 'px';
+
+            // ヤサイの高さに応じてニンニクとカラメの上下位置も連動して追従させる
+            const topPositionForElements = 60 + (currentYasaiHeight - 60);
+            document.getElementById('topping-ninniku').style.bottom = topPositionForElements + 'px';
+            document.getElementById('topping-karame').style.bottom = currentYasaiHeight + 'px';
+
+            // 2. ニンニクの粒々表現生成 (なし:0個, 少なめ:2個, マシ:5個, マシマシ:10個)
+            const ninnikuContainer = document.getElementById('topping-ninniku');
+            ninnikuContainer.innerHTML = '';
+            const ninnikuCounts = [0, 2, 5, 10];
+            const count = ninnikuCounts[player.ninniku];
+            
+            for (let i = 0; i < count; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'ninniku-dot';
+                // レベルに応じてニンニクの粒サイズを変更
+                let size = player.ninniku === 3 ? (i % 2 === 0 ? '9px' : '12px') : '8px';
+                dot.style.width = size;
+                dot.style.height = size;
+                ninnikuContainer.appendChild(dot);
+            }
+
+            // 3. カラメ（タレの濃さと垂れ具合）表現
+            const karameElem = document.getElementById('topping-karame');
+            if (player.karame === 0) {
+                karameElem.style.opacity = '0';
+            } else if (player.karame === 1) {
+                karameElem.style.opacity = '0.7'; // カラメ
+                // 垂れ線の色を標準に
+                document.querySelectorAll('.karame-drip').forEach(d => d.style.background = '#3e1405');
+            } else {
+                karameElem.style.opacity = '1'; // カラカラ（濃い）
+                // 垂れ線を濃く・太く
+                document.querySelectorAll('.karame-drip').forEach(d => {
+                    d.style.background = '#1a0802';
+                });
+            }
+        }
+
+        // 提供ボタンの判定処理
+        function submitOrder() {
+            let diffNinniku = Math.abs(player.ninniku - order.ninniku);
+            let diffYasai = Math.abs(player.yasai - order.yasai);
+            let diffKarame = Math.abs(player.karame - order.karame);
+
+            let totalDiff = diffNinniku + diffYasai + diffKarame;
+            let score = Math.max(0, 100 - (totalDiff * 12));
+
+            let resultMsg = "";
+            if (score === 100) {
+                resultMsg = "🌟 パーフェクト！「おっ、完璧な一杯だな！」（満足度 100%）";
+            } else if (score >= 70) {
+                resultMsg = `👍 まあまあ。「美味いね、ごちそうさま！」（満足度 ${Math.round(score)}%）`;
+            } else {
+                resultMsg = `💥 「注文と味が違うぞ！」（満足度 ${Math.round(score)}%）`;
+            }
+
+            const orderNinnikuName = NINNIKU_STAGES.find(s => s.level === order.ninniku).name;
+            const orderYasaiName = YASAI_STAGES.find(s => s.level === order.yasai).name;
+            const orderKarameName = KARAME_STAGES.find(s => s.level === order.karame).name;
+
+            const playerNinnikuName = NINNIKU_STAGES.find(s => s.level === player.ninniku).name;
+            const playerYasaiName = YASAI_STAGES.find(s => s.level === player.yasai).name;
+            const playerKarameName = KARAME_STAGES.find(s => s.level === player.karame).name;
+
+            document.getElementById('result-modal').innerHTML = `
+                <strong>${resultMsg}</strong><br>
+                <span style="font-size: 0.85rem; color: #b0bec5; line-height: 1.4; display: block; margin-top: 5px;">
+                [正解] ニンニク:${orderNinnikuName} / ヤサイ:${orderYasaiName} / カラメ:${orderKarameName}<br>
+                [あなたの盛り付け] ニンニク:${playerNinnikuName} / ヤサイ:${playerYasaiName} / カラメ:${playerKarameName}
+                </span>
+                <button onclick="initGame()" style="margin-top: 10px; padding: 6px 15px; font-weight: bold; background: #ffb74d; border: none; border-radius: 4px; cursor: pointer;">次の客へ</button>
+            `;
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
